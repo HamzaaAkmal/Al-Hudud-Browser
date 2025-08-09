@@ -94,7 +94,14 @@ android {
 
         buildConfigField "String[]", "SUPPORTED_LOCALE_ARRAY", getSupportedLocales()
     }
-
+    signingConfigs {
+        release {
+            storeFile file("my-key.keystore")
+            storePassword "Hamza@1231"
+            keyAlias "my-key-alias"
+            keyPassword "Hamza@1231"
+        }
+    }
     def releaseTemplate = {
         // We allow disabling optimization by passing `-PdisableOptimization` to gradle. This is used
         // in automation for UI testing non-debug builds.
@@ -152,6 +159,12 @@ android {
                     "sharedUserId": "org.mozilla.firefox.sharedID",
                     "deepLinkScheme": deepLinkSchemeValue,
             ])
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            debuggable false
+            signingConfig signingConfigs.release
         }
         release releaseTemplate >> {
             buildConfigField "boolean", "USE_RELEASE_VERSIONING", "true"
