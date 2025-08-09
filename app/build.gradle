@@ -96,7 +96,7 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file("my-key.keystore")
+            storeFile file("my-release-key.keystore")
             storePassword "Hamza@1231"
             keyAlias "my-key-alias"
             keyPassword "Hamza@1231"
@@ -206,6 +206,7 @@ android {
         forkRelease releaseTemplate >> {
             buildConfigField "boolean", "USE_RELEASE_VERSIONING", "true"
             applicationIdSuffix ".iceraven"
+            signingConfig signingConfigs.release
             def deepLinkSchemeValue = "iceraven"
             buildConfigField "String", "DEEP_LINK_SCHEME", "\"$deepLinkSchemeValue\""
             manifestPlaceholders.putAll([
@@ -753,6 +754,11 @@ dependencies {
     implementation libs.androidx.transition
     implementation libs.androidx.viewpager2
     implementation libs.androidx.work.runtime
+
+    // Al Hudud - App Lock Dependencies
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    implementation 'androidx.biometric:biometric:1.2.0-alpha05'
 
     implementation libs.protobuf.javalite
     implementation libs.google.material
