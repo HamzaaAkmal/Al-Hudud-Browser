@@ -30,6 +30,7 @@ internal fun MoreSettingsSubmenu(
     isWebCompatReporterSupported: Boolean,
     isWebCompatEnabled: Boolean,
     translationInfo: TranslationInfo,
+    deviceAdminProtectionStatus: String,
     onWebCompatReporterClick: () -> Unit,
     onShortcutsMenuClick: () -> Unit,
     onAddToHomeScreenMenuClick: () -> Unit,
@@ -37,6 +38,7 @@ internal fun MoreSettingsSubmenu(
     onSaveAsPDFMenuClick: () -> Unit,
     onPrintMenuClick: () -> Unit,
     onOpenInAppMenuClick: () -> Unit,
+    onDeviceAdminProtectionClick: () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -56,6 +58,13 @@ internal fun MoreSettingsSubmenu(
                 onClick = onWebCompatReporterClick,
             )
         }
+
+        MenuItem(
+            label = stringResource(id = R.string.browser_menu_device_admin_protection),
+            description = deviceAdminProtectionStatus,
+            beforeIconPainter = painterResource(id = R.drawable.mozac_ic_lock_24),
+            onClick = onDeviceAdminProtectionClick,
+        )
 
         ShortcutsMenuItem(
             isPinned = isPinned,
@@ -188,6 +197,7 @@ private fun MoreSettingsSubmenuPreview() {
                         translatedLanguage = "English",
                         onTranslatePageMenuClick = {},
                     ),
+                    deviceAdminProtectionStatus = "Protection ON",
                     onWebCompatReporterClick = {},
                     onShortcutsMenuClick = {},
                     onAddToHomeScreenMenuClick = {},
@@ -195,6 +205,7 @@ private fun MoreSettingsSubmenuPreview() {
                     onSaveAsPDFMenuClick = {},
                     onPrintMenuClick = {},
                     onOpenInAppMenuClick = {},
+                    onDeviceAdminProtectionClick = {},
                 )
             }
         }
@@ -224,6 +235,7 @@ private fun MoreSettingsSubmenuPrivatePreview() {
                         translatedLanguage = "English",
                         onTranslatePageMenuClick = {},
                     ),
+                    deviceAdminProtectionStatus = "Protection OFF",
                     onWebCompatReporterClick = {},
                     onShortcutsMenuClick = {},
                     onAddToHomeScreenMenuClick = {},
@@ -231,6 +243,7 @@ private fun MoreSettingsSubmenuPrivatePreview() {
                     onSaveAsPDFMenuClick = {},
                     onPrintMenuClick = {},
                     onOpenInAppMenuClick = {},
+                    onDeviceAdminProtectionClick = {},
                 )
             }
         }
