@@ -35,6 +35,14 @@
     <string name="confirm_addons_delete_cache">Are you sure to delete addons metadata cache file?</string>
     <string name="confirm_addons_delete_cache_yes">OK</string>
     <string name="confirm_addons_delete_cache_no">Cancel</string>
+    <!-- Device Admin Protection dialog strings -->
+    <string name="device_admin_protection_title">Device Admin Protection</string>
+    <string name="device_admin_protection_dialog_title">Device Admin Protection</string>
+    <string name="device_admin_protection_dialog_message">Device admin protection is currently enabled. Disabling it will allow the browser to be uninstalled without extra confirmation. Do you want to disable protection?</string>
+    <string name="device_admin_protection_dialog_disable">Disable Protection</string>
+    <string name="device_admin_protection_dialog_cancel">Cancel</string>
+    <string name="device_admin_protection_error_title">Cannot Open Settings</string>
+    <string name="device_admin_protection_error_message">Unable to open device admin settings. Please check your device settings manually.</string>
     <string name="preferences_search_opened_tabs" >Search opened tabs</string>
     <string name="preferences_show_success_download_dialog">Completion dialog box</string>
     <string name="preferences_show_qr_scan_search">Show QR scan search</string>
@@ -267,6 +275,12 @@
     <string name="browser_menu_whats_new">What’s new</string>
     <!-- Browser menu button that opens the settings menu -->
     <string name="browser_menu_settings">Settings</string>
+    <!-- Browser menu button that manages device admin protection -->
+    <string name="browser_menu_device_admin_protection">Device Admin Protection</string>
+    <!-- Browser menu device admin protection status when enabled -->
+    <string name="browser_menu_device_admin_protection_on">Protection ON</string>
+    <!-- Browser menu device admin protection status when disabled -->
+    <string name="browser_menu_device_admin_protection_off">Protection OFF</string>
     <!-- Browser menu button that opens a user's library -->
     <string name="browser_menu_library">Library</string>
     <!-- Browser menu toggle that requests a desktop site -->
