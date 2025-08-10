@@ -16,6 +16,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -82,6 +85,8 @@ import org.mozilla.fenix.components.menu.store.MenuState
 import org.mozilla.fenix.components.menu.store.MenuStore
 import org.mozilla.fenix.components.menu.store.TranslationInfo
 import org.mozilla.fenix.components.menu.store.WebExtensionMenuItem
+import org.mozilla.fenix.components.deviceadmin.DeviceAdminManager
+import org.mozilla.fenix.components.deviceadmin.DeviceAdminDialogHandler
 import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.runIfFragmentIsAttached
 import org.mozilla.fenix.ext.settings
@@ -121,6 +126,13 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
     private val webExtensionsMenuBinding = ViewBoundFeatureWrapper<WebExtensionsMenuBinding>()
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
     private var isPrivate: Boolean = false
+    
+    private lateinit var deviceAdminManager: DeviceAdminManager
+    private lateinit var deviceAdminDialogHandler: DeviceAdminDialogHandler
+    private val deviceAdminActivityResultLauncher: ActivityResultLauncher<Intent> = 
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            deviceAdminDialogHandler.handleActivityResult(result)
+        }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         Events.toolbarMenuVisible.record(NoExtras())
@@ -129,6 +141,10 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
             setOnShowListener {
                 val safeActivity = activity ?: return@setOnShowListener
                 val browsingModeManager = (safeActivity as HomeActivity).browsingModeManager
+
+                // Initialize device admin manager
+                deviceAdminManager = DeviceAdminManager(safeActivity)
+                deviceAdminDialogHandler = DeviceAdminDialogHandler(this@MenuDialogFragment)
 
                 isPrivate = browsingModeManager.mode.isPrivate
 
@@ -629,6 +645,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                             externalAppName = appLinksRedirect?.appName ?: "",
                                             isWebCompatReporterSupported = isWebCompatReporterSupported,
                                             translationInfo = translationInfo,
+                                            deviceAdminProtectionStatus = deviceAdminManager.getStatusText(),
                                             onWebCompatReporterClick = {
                                                 store.dispatch(MenuAction.Navigate.WebCompatReporter)
                                             },
@@ -660,6 +677,9 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                             },
                                             onOpenInAppMenuClick = {
                                                 store.dispatch(MenuAction.OpenInApp)
+                                            },
+                                            onDeviceAdminProtectionClick = {
+                                                deviceAdminDialogHandler.handleDeviceAdminProtectionClick()
                                             },
                                         )
                                     },
