@@ -140,6 +140,11 @@
             android:key="@string/pref_key_notifications"
             app:iconSpaceReserved="false"
             android:title="@string/preferences_notifications" />
+
+        <androidx.preference.Preference
+            android:key="@string/pref_key_device_admin_protection"
+            app:iconSpaceReserved="false"
+            android:title="@string/device_admin_protection_title" />
     </androidx.preference.PreferenceCategory>
 
     <PreferenceCategory
