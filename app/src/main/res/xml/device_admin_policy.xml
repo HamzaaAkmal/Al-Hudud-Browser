@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Device admin policy configuration for uninstall protection -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <!-- We include at least one policy permission, even if we're only using lock/uninstall prevention -->
+        <force-lock /> 
+    </uses-policies>
+</device-admin>
+<!-- This policy allows the device admin to prevent the uninstallation of the app -->
