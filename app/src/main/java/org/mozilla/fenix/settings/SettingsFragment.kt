@@ -71,6 +71,7 @@ import org.mozilla.fenix.settings.account.AccountUiView
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
 import org.mozilla.fenix.utils.Settings
+import org.mozilla.fenix.components.deviceadmin.DeviceAdminDialogHandler
 import kotlin.system.exitProcess
 import org.mozilla.fenix.GleanMetrics.Settings as SettingsMetrics
 
@@ -80,6 +81,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private val args by navArgs<SettingsFragmentArgs>()
     private lateinit var accountUiView: AccountUiView
     private lateinit var addonFilePicker: AddonFilePicker
+    private lateinit var deviceAdminDialogHandler: DeviceAdminDialogHandler
     private val profilerViewModel: ProfilerViewModel by activityViewModels()
     private val snackbarBinding = ViewBoundFeatureWrapper<SnackbarBinding>()
 
@@ -119,6 +121,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         addonFilePicker = AddonFilePicker(requireContext(), requireComponents.addonManager)
         addonFilePicker.registerForResults(this)
+
+        deviceAdminDialogHandler = DeviceAdminDialogHandler(this)
 
         // It's important to update the account UI state in onCreate since that ensures we'll never
         // display an incorrect state in the UI. We take care to not also call it as part of onResume
@@ -393,6 +397,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 null
             }
 
+            resources.getString(R.string.pref_key_device_admin_protection) -> {
+                deviceAdminDialogHandler.handleDeviceAdminProtectionClick()
+                null
+            }
+
             resources.getString(R.string.pref_key_data_choices) -> {
                 SettingsFragmentDirections.actionSettingsFragmentToDataChoicesFragment()
             }
@@ -569,6 +578,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setupGeckoLogsPreference(requireContext().settings())
         setupHttpsOnlyPreferences()
         setupNotificationPreference()
+        setupDeviceAdminPreference()
         setupSearchPreference()
         setupHomepagePreference()
         setupTrackingProtectionPreference()
@@ -657,6 +667,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
             } else {
                 getString(R.string.notifications_not_allowed_summary)
             }
+        }
+    }
+
+    @VisibleForTesting
+    internal fun setupDeviceAdminPreference() {
+        with(requirePreference<Preference>(R.string.pref_key_device_admin_protection)) {
+            summary = deviceAdminDialogHandler.getStatusSummary(requireContext())
         }
     }
 
