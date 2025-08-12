@@ -2612,4 +2612,28 @@ class Settings(private val appContext: Context) : PreferencesHolder {
         key = appContext.getPreferenceKey(R.string.pref_key_distribution_id),
         default = "",
     )
+
+    /**
+     * Indicates if App Locker feature is enabled
+     */
+    var isAppLockerEnabled by booleanPreference(
+        key = appContext.getPreferenceKey(R.string.pref_key_app_locker),
+        default = false,
+    )
+
+    /**
+     * App Locker master PIN for authentication
+     */
+    var appLockerMasterPin by stringPreference(
+        key = "app_locker_master_pin",
+        default = "",
+    )
+
+    /**
+     * Set of package names that are protected by App Locker
+     */
+    var appLockerProtectedApps by stringSetPreference(
+        key = "app_locker_protected_apps",
+        default = emptySet(),
+    )
 }

@@ -72,6 +72,7 @@ import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.components.deviceadmin.DeviceAdminDialogHandler
+import org.mozilla.fenix.components.applocker.AppLockerDialogHandler
 import kotlin.system.exitProcess
 import org.mozilla.fenix.GleanMetrics.Settings as SettingsMetrics
 
@@ -82,6 +83,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var accountUiView: AccountUiView
     private lateinit var addonFilePicker: AddonFilePicker
     private lateinit var deviceAdminDialogHandler: DeviceAdminDialogHandler
+    private lateinit var appLockerDialogHandler: AppLockerDialogHandler
     private val profilerViewModel: ProfilerViewModel by activityViewModels()
     private val snackbarBinding = ViewBoundFeatureWrapper<SnackbarBinding>()
 
@@ -123,6 +125,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         addonFilePicker.registerForResults(this)
 
         deviceAdminDialogHandler = DeviceAdminDialogHandler(this)
+        appLockerDialogHandler = AppLockerDialogHandler(this)
 
         // It's important to update the account UI state in onCreate since that ensures we'll never
         // display an incorrect state in the UI. We take care to not also call it as part of onResume
@@ -402,6 +405,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 null
             }
 
+            resources.getString(R.string.pref_key_app_locker) -> {
+                appLockerDialogHandler.handleAppLockerClick()
+                null
+            }
+
             resources.getString(R.string.pref_key_data_choices) -> {
                 SettingsFragmentDirections.actionSettingsFragmentToDataChoicesFragment()
             }
@@ -579,6 +587,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setupHttpsOnlyPreferences()
         setupNotificationPreference()
         setupDeviceAdminPreference()
+        setupAppLockerPreference()
         setupSearchPreference()
         setupHomepagePreference()
         setupTrackingProtectionPreference()
@@ -674,6 +683,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
     internal fun setupDeviceAdminPreference() {
         with(requirePreference<Preference>(R.string.pref_key_device_admin_protection)) {
             summary = deviceAdminDialogHandler.getStatusSummary(requireContext())
+        }
+    }
+
+    @VisibleForTesting
+    internal fun setupAppLockerPreference() {
+        with(requirePreference<Preference>(R.string.pref_key_app_locker)) {
+            summary = appLockerDialogHandler.getStatusSummary()
         }
     }
 

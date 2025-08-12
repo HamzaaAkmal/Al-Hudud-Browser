@@ -43,6 +43,22 @@
     <string name="device_admin_protection_dialog_cancel">Cancel</string>
     <string name="device_admin_protection_error_title">Cannot Open Settings</string>
     <string name="device_admin_protection_error_message">Unable to open device admin settings. Please check your device settings manually.</string>
+    
+    <!-- App Locker strings -->
+    <string name="app_locker_title">App Locker</string>
+    <string name="app_locker_summary">Protect apps with PIN authentication</string>
+    <string name="app_locker_enabled_summary">App protection is enabled</string>
+    <string name="app_locker_disabled_summary">App protection is disabled</string>
+    <string name="app_locker_setup_title">Set up App Locker</string>
+    <string name="app_locker_setup_message">Configure PIN protection for selected apps</string>
+    <string name="app_locker_permission_required">Permission Required</string>
+    <string name="app_locker_permission_message">App Locker requires accessibility service permission to monitor app launches. This permission is used solely for app protection purposes.</string>
+    <string name="app_locker_permission_grant">Grant Permission</string>
+    <string name="app_locker_permission_cancel">Cancel</string>
+    
+    <!-- App Locker accessibility service description -->
+    <string name="app_lock_accessibility_service_description">App Locker monitors app launches to protect selected apps with PIN authentication. This service only monitors app switching and does not access or modify app content.</string>
+    
     <string name="preferences_search_opened_tabs" >Search opened tabs</string>
     <string name="preferences_show_success_download_dialog">Completion dialog box</string>
     <string name="preferences_show_qr_scan_search">Show QR scan search</string>

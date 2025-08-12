@@ -145,6 +145,12 @@
             android:key="@string/pref_key_device_admin_protection"
             app:iconSpaceReserved="false"
             android:title="@string/device_admin_protection_title" />
+
+        <androidx.preference.Preference
+            android:key="@string/pref_key_app_locker"
+            app:iconSpaceReserved="false"
+            android:title="@string/app_locker_title"
+            android:summary="@string/app_locker_disabled_summary" />
     </androidx.preference.PreferenceCategory>
 
     <PreferenceCategory
