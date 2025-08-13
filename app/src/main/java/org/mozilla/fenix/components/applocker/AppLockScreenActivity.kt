@@ -82,14 +82,14 @@ class AppLockScreenActivity : ComponentActivity() {
 
     private fun handlePinVerification(enteredPin: String) {
         val storedPin = settings().appLockerMasterPin
-        
+
         if (storedPin.isNotEmpty() && PasswordHasher.verifyPin(enteredPin, storedPin)) {
             // PIN is correct - unlock the app
             val unlockIntent = Intent(AppLockAccessibilityService.ACTION_UNLOCK_SUCCESS).apply {
                 putExtra("package_name", targetPackageName)
             }
             sendBroadcast(unlockIntent)
-            
+
             // Launch the target app
             val launchIntent = packageManager.getLaunchIntentForPackage(targetPackageName)
             if (launchIntent != null) {
@@ -112,38 +112,44 @@ private fun LockScreenUI(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.8f))
+            .background(Color.Black.copy(alpha = 0.8f)),
+        contentAlignment = Alignment.Center
     ) {
         Card(
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(32.dp)
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .fillMaxWidth()
+                .padding(32.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = "App Locked",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 )
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 Text(
                     text = "Enter your PIN to unlock",
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 OutlinedTextField(
                     value = pin,
                     onValueChange = { newPin ->
@@ -156,30 +162,49 @@ private fun LockScreenUI(
                     },
                     label = { Text("PIN") },
                     visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    // **FIX:** Replaced `outlinedTextFieldColors` with the more compatible `colors`
+                    // to resolve the "Unresolved reference" build error.
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
                 )
-                
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     OutlinedButton(
                         onClick = onCancel,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
                     ) {
-                        Text("Cancel")
+                        Text("Cancel", fontWeight = FontWeight.SemiBold)
                     }
-                    
+
                     Button(
                         onClick = { onPinSubmit(pin) },
                         enabled = pin.length == 4,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     ) {
-                        Text("Unlock")
+                        Text("Unlock", fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
