@@ -81,40 +81,101 @@ class AppLockAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
         
+        // Enhanced logging for Google apps and critical debugging
+        if (packageName.startsWith("com.google.") || packageName.startsWith("com.android.")) {
+            Log.i(TAG, "GOOGLE/ANDROID APP DETECTED: $packageName, Event: ${event.eventType}")
+        }
+        
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
+                Log.d(TAG, "Window state changed for: $packageName")
                 handleAppLaunch(packageName)
+            }
+            else -> {
+                Log.v(TAG, "Other event type ${event.eventType} for: $packageName")
             }
         }
     }
 
     private fun handleAppLaunch(packageName: String) {
+        // Add comprehensive logging for Google apps debugging
+        Log.d(TAG, "handleAppLaunch called for package: $packageName")
+        
         // Skip if app is temporarily unlocked
         if (unlockSessionManager.isTemporarilyUnlocked(packageName)) {
+            Log.d(TAG, "Package $packageName is temporarily unlocked, marking foreground")
             unlockSessionManager.markAppInForeground(packageName)
             return
         }
 
-        // Skip if this is our own app or system apps we shouldn't lock
-        if (shouldSkipApp(packageName)) {
+        // Check if this app should be skipped (CRITICAL: This is where Google apps are bypassed!)
+        val shouldSkip = shouldSkipApp(packageName)
+        Log.d(TAG, "shouldSkipApp($packageName) = $shouldSkip")
+        if (shouldSkip) {
+            Log.w(TAG, "CRITICAL: Skipping app lock for $packageName - this may be the Google apps bypass bug!")
             return
         }
 
         // Check if app is protected
         val protectedApps = applicationContext.settings().appLockerProtectedApps
-        if (protectedApps.contains(packageName) && applicationContext.settings().isAppLockerEnabled) {
+        val isAppLockerEnabled = applicationContext.settings().isAppLockerEnabled
+        val isAppProtected = protectedApps.contains(packageName)
+        
+        Log.d(TAG, "App Locker enabled: $isAppLockerEnabled")
+        Log.d(TAG, "Package $packageName is protected: $isAppProtected")
+        Log.d(TAG, "Protected apps list: $protectedApps")
+        
+        if (isAppProtected && isAppLockerEnabled) {
             // Check if we switched from another app
-            if (packageName != lastUnlockedApp) {
+            val switchedFromDifferentApp = packageName != lastUnlockedApp
+            Log.d(TAG, "Switched from different app: $switchedFromDifferentApp (lastUnlockedApp: $lastUnlockedApp)")
+            
+            if (switchedFromDifferentApp) {
+                Log.i(TAG, "Showing lock screen for protected app: $packageName")
                 showLockScreen(packageName)
+            } else {
+                Log.d(TAG, "Same app launch, not showing lock screen")
             }
+        } else {
+            Log.d(TAG, "App $packageName not requiring lock screen (protected: $isAppProtected, enabled: $isAppLockerEnabled)")
         }
     }
 
     private fun shouldSkipApp(packageName: String): Boolean {
-        return packageName == applicationContext.packageName || // Our own app
-               packageName.startsWith("com.android.") || // System apps
-               packageName.startsWith("android") ||
-               packageName == "com.android.systemui"
+        // Enhanced Google Apps detection with comprehensive logging
+        Log.d(TAG, "shouldSkipApp evaluation for: $packageName")
+        
+        // Our own browser app should always be skipped
+        if (packageName == applicationContext.packageName) {
+            Log.d(TAG, "Skipping our own package: $packageName")
+            return true
+        }
+        
+        // CRITICAL FIX: Remove Google apps bypass that was causing the security vulnerability
+        // Previously this function was filtering out Google apps with com.android.* and android prefixes
+        // Gmail (com.google.android.gm), Play Store (com.android.vending), Chrome (com.android.chrome)
+        // were being bypassed due to these broad exclusions
+        
+        // Only skip essential system UI components that would break the device if locked
+        val systemUIComponents = setOf(
+            "com.android.systemui",
+            "android.system.ui",
+            "com.android.launcher",
+            "com.android.settings" // Allow user to access settings if needed
+        )
+        
+        if (systemUIComponents.any { packageName.startsWith(it) }) {
+            Log.d(TAG, "Skipping essential system UI component: $packageName")
+            return true
+        }
+        
+        // SECURITY: DO NOT skip Google apps - they should be subject to App Locker like any other app
+        if (packageName.startsWith("com.google.") || packageName.startsWith("com.android.")) {
+            Log.i(TAG, "SECURITY FIX: Google/Android app $packageName will be subject to App Locker (not skipped)")
+        }
+        
+        Log.d(TAG, "App $packageName will be processed for locking if configured")
+        return false
     }
 
     private fun showLockScreen(packageName: String) {
