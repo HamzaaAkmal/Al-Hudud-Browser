@@ -10,9 +10,11 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.applocker.IslamicTextChallengeActivity
 
 /**
  * Handler for device admin protection dialog and settings navigation.
@@ -22,6 +24,12 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
 
     private val context: Context get() = fragment.requireContext()
     private val deviceAdminManager = DeviceAdminManager(context)
+    
+    // Activity result launcher for Islamic Text Challenge
+    private val islamicChallengeResultLauncher: ActivityResultLauncher<Intent> = 
+        fragment.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            handleIslamicChallengeResult(result)
+        }
 
     /**
      * Handle device admin protection menu click.
@@ -42,14 +50,42 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
     private fun showDisableConfirmationDialog() {
         AlertDialog.Builder(context)
             .setTitle(context.getString(R.string.device_admin_protection_dialog_title))
-            .setMessage(context.getString(R.string.device_admin_protection_dialog_message))
-            .setPositiveButton(context.getString(R.string.device_admin_protection_dialog_disable)) { _, _ ->
-                openDeviceAdminSettings()
+            .setMessage("To disable Device Admin protection, you must complete an Islamic text typing challenge. This ensures authorized access only.")
+            .setPositiveButton("Continue") { _, _ ->
+                startIslamicTextChallenge()
             }
             .setNegativeButton(context.getString(R.string.device_admin_protection_dialog_cancel)) { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
+    }
+
+    /**
+     * Start Islamic Text Challenge for Device Admin disable
+     */
+    private fun startIslamicTextChallenge() {
+        val intent = IslamicTextChallengeActivity.createIntent(
+            context, 
+            IslamicTextChallengeActivity.TYPE_DEVICE_ADMIN_DISABLE
+        )
+        islamicChallengeResultLauncher.launch(intent)
+    }
+
+    /**
+     * Handle result from Islamic Text Challenge
+     */
+    private fun handleIslamicChallengeResult(result: ActivityResult) {
+        when (result.resultCode) {
+            IslamicTextChallengeActivity.RESULT_CHALLENGE_SUCCESS -> {
+                // Challenge passed - proceed with opening device admin settings
+                openDeviceAdminSettingsForDisable()
+                Toast.makeText(context, "Challenge completed successfully. Opening Device Admin settings.", Toast.LENGTH_LONG).show()
+            }
+            IslamicTextChallengeActivity.RESULT_CHALLENGE_FAILED -> {
+                // Challenge failed - show message and do nothing
+                Toast.makeText(context, "Challenge failed. Device Admin protection remains enabled.", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     /**
@@ -63,6 +99,18 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
                 deviceAdminManager.getEnableDeviceAdminIntent()
             }
 
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            showErrorDialog()
+        }
+    }
+
+    /**
+     * Open device admin settings specifically for disable (after challenge success)
+     */
+    private fun openDeviceAdminSettingsForDisable() {
+        try {
+            val intent = deviceAdminManager.getDisableDeviceAdminIntent()
             context.startActivity(intent)
         } catch (e: Exception) {
             showErrorDialog()

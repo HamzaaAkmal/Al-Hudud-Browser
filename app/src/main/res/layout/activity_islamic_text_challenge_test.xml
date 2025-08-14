@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:colorBackground"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/test_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:gravity="center"
+            android:text="Islamic Text Challenge Testing"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <!-- Status Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <TextView
+                android:id="@+id/test_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="4dp"
+                android:padding="16dp"
+                android:text="Loading status..."
+                android:textColor="?android:textColorPrimary"
+                android:textSize="14sp" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Test Buttons Section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Test Islamic Text Challenges:"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- Test App Locker Button -->
+        <Button
+            android:id="@+id/test_app_locker_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/primary_button_background"
+            android:padding="16dp"
+            android:text="Test App Locker Disable Challenge"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- Test Device Admin Button -->
+        <Button
+            android:id="@+id/test_device_admin_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/success_button_background"
+            android:padding="16dp"
+            android:text="Test Device Admin Disable Challenge"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <!-- View Challenges Button -->
+        <Button
+            android:id="@+id/view_challenges_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/text_input_background"
+            android:padding="16dp"
+            android:text="View Available Challenges"
+            android:textColor="?android:textColorPrimary"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Instructions -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:lineSpacingExtra="4dp"
+            android:text="Instructions:\n• Click 'Test App Locker' to simulate disabling App Locker protection\n• Click 'Test Device Admin' to simulate disabling Device Admin protection\n• Both will trigger the Islamic text typing challenge\n• You have 2 minutes to type the exact text\n• Purple highlighted words require special attention\n• Any character mismatch will cause failure"
+            android:textColor="?android:textColorSecondary"
+            android:textSize="13sp" />
+
+        <!-- Back Button -->
+        <Button
+            android:id="@+id/back_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/cancel_button_background"
+            android:padding="12dp"
+            android:text="Back"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</ScrollView>

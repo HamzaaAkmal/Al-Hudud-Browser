@@ -183,4 +183,11 @@ class AppLockerManager(private val context: Context) {
             browserPackages.contains(it.packageName) 
         }
     }
+
+    /**
+     * Get intent to launch Islamic Text Challenge Test Activity
+     */
+    fun getIslamicTextChallengeTestIntent(): Intent {
+        return IslamicTextChallengeTestActivity.createIntent(context)
+    }
 }

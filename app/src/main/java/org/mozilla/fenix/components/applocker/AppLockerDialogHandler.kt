@@ -4,11 +4,15 @@
 
 package org.mozilla.fenix.components.applocker
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.text.InputType
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import org.mozilla.fenix.R
@@ -22,6 +26,12 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
 
     private val context: Context get() = fragment.requireContext()
     private val appLockerManager = AppLockerManager(context)
+    
+    // Activity result launcher for Islamic Text Challenge
+    private val islamicChallengeResultLauncher: ActivityResultLauncher<Intent> = 
+        fragment.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            handleIslamicChallengeResult(result)
+        }
 
     /**
      * Handle App Locker preference click.
@@ -99,6 +109,7 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
         val options = arrayOf(
             "Manage Protected Apps",
             "Change PIN",
+            "Test Islamic Text Challenge",
             "Disable App Locker"
         )
 
@@ -108,7 +119,8 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
                 when (which) {
                     0 -> showAppSelectionDialog()
                     1 -> showChangePinDialog()
-                    2 -> showDisableDialog()
+                    2 -> showTestChallengeDialog()
+                    3 -> showDisableDialog()
                 }
             }
             .setNegativeButton("Cancel") { dialog, _ ->
@@ -165,14 +177,54 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
     private fun showDisableDialog() {
         AlertDialog.Builder(context)
             .setTitle("Disable App Locker")
-            .setMessage("This will remove protection from all apps. Are you sure?")
-            .setPositiveButton("Disable") { _, _ ->
-                disableAppLocker()
+            .setMessage("To disable App Locker protection, you must complete an Islamic text typing challenge. This ensures authorized access only.")
+            .setPositiveButton("Continue") { _, _ ->
+                startIslamicTextChallenge()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()
+    }
+
+    /**
+     * Start Islamic Text Challenge for App Locker disable
+     */
+    private fun startIslamicTextChallenge() {
+        val intent = IslamicTextChallengeActivity.createIntent(
+            context, 
+            IslamicTextChallengeActivity.TYPE_APP_LOCKER_DISABLE
+        )
+        islamicChallengeResultLauncher.launch(intent)
+    }
+
+    /**
+     * Handle result from Islamic Text Challenge
+     */
+    private fun handleIslamicChallengeResult(result: ActivityResult) {
+        when (result.resultCode) {
+            IslamicTextChallengeActivity.RESULT_CHALLENGE_SUCCESS -> {
+                // Challenge passed - proceed with disabling App Locker
+                disableAppLocker()
+                Toast.makeText(context, "Challenge completed successfully. App Locker disabled.", Toast.LENGTH_LONG).show()
+            }
+            IslamicTextChallengeActivity.RESULT_CHALLENGE_FAILED -> {
+                // Challenge failed - show message and do nothing
+                Toast.makeText(context, "Challenge failed. App Locker remains enabled.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    /**
+     * Show test challenge dialog
+     */
+    private fun showTestChallengeDialog() {
+        try {
+            val intent = appLockerManager.getIslamicTextChallengeTestIntent()
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            showErrorDialog("Cannot open test activity")
+        }
     }
 
     /**

@@ -818,6 +818,21 @@
             android:theme="@style/NormalTheme"
             android:label="Select Apps to Lock" />
 
+        <activity
+            android:name=".components.applocker.IslamicTextChallengeActivity"
+            android:exported="false"
+            android:theme="@style/NormalTheme"
+            android:label="Security Verification Required"
+            android:windowSoftInputMode="adjustResize"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".components.applocker.IslamicTextChallengeTestActivity"
+            android:exported="false"
+            android:theme="@style/NormalTheme"
+            android:label="Islamic Text Challenge Test"
+            android:screenOrientation="portrait" />
+
         <service
             android:name=".components.applocker.AppLockAccessibilityService"
             android:exported="true"
