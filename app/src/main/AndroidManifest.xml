@@ -812,6 +812,12 @@
             android:taskAffinity=""
             android:launchMode="singleTask" />
 
+        <activity
+            android:name=".components.applocker.AppSelectionActivity"
+            android:exported="false"
+            android:theme="@style/NormalTheme"
+            android:label="Select Apps to Lock" />
+
         <service
             android:name=".components.applocker.AppLockAccessibilityService"
             android:exported="true"

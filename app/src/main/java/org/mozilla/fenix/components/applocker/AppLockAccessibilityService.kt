@@ -27,7 +27,7 @@ class AppLockAccessibilityService : AccessibilityService() {
         const val ACTION_UNLOCK_SUCCESS = "org.mozilla.fenix.applocker.UNLOCK_SUCCESS"
     }
 
-    private val unlockSessionManager = UnlockSessionManager()
+    private val unlockSessionManager = OptimizedUnlockSessionManager()
     private var lastUnlockedApp: String? = null
 
     private val screenOffReceiver = object : BroadcastReceiver() {
@@ -179,11 +179,19 @@ class AppLockAccessibilityService : AccessibilityService() {
     }
 
     private fun showLockScreen(packageName: String) {
+        // Use a more efficient intent with faster launch
         val intent = Intent(this, AppLockScreenActivity::class.java).apply {
             putExtra("target_package", packageName)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or 
+                     Intent.FLAG_ACTIVITY_CLEAR_TOP or 
+                     Intent.FLAG_ACTIVITY_NO_ANIMATION)
         }
         startActivity(intent)
+        
+        // Add slight delay to ensure smooth transition
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            // Optional: could add any post-launch optimizations here
+        }, 50)
     }
 
     override fun onInterrupt() {
@@ -195,6 +203,7 @@ class AppLockAccessibilityService : AccessibilityService() {
         try {
             unregisterReceiver(screenOffReceiver)
             unregisterReceiver(unlockBroadcastReceiver)
+            unlockSessionManager.destroy()
         } catch (e: Exception) {
             Log.e(TAG, "Error unregistering receivers", e)
         }

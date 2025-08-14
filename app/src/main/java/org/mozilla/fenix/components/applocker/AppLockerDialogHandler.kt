@@ -79,7 +79,9 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
                 val pin = pinInput.text.toString()
                 if (isValidPin(pin)) {
                     saveMasterPin(pin)
-                    showAppSelectionDialog()
+                    // After setting PIN, go to app selection
+                    val intent = Intent(context, AppSelectionActivity::class.java)
+                    fragment.startActivity(intent)
                 } else {
                     showInvalidPinError()
                 }
@@ -119,26 +121,15 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
      * Show app selection dialog.
      */
     private fun showAppSelectionDialog() {
-        val apps = appLockerManager.getInstallableApps()
-        val protectedApps = context.settings().appLockerProtectedApps
-        val appNames = apps.map { it.name }.toTypedArray()
-        val checkedItems = apps.map { protectedApps.contains(it.packageName) }.toBooleanArray()
-
-        AlertDialog.Builder(context)
-            .setTitle("Select Apps to Protect")
-            .setMultiChoiceItems(appNames, checkedItems) { _, which, isChecked ->
-                checkedItems[which] = isChecked
-            }
-            .setPositiveButton("Save") { _, _ ->
-                val selectedApps = apps.filterIndexed { index, _ -> checkedItems[index] }
-                    .map { it.packageName }.toSet()
-                saveProtectedApps(selectedApps)
-                enableAppLocker()
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+        // Check if PIN is set up first
+        if (context.settings().appLockerMasterPin.isEmpty()) {
+            showPinSetupDialog()
+            return
+        }
+        
+        // Launch the new modern app selection activity
+        val intent = Intent(context, AppSelectionActivity::class.java)
+        fragment.startActivity(intent)
     }
 
     /**

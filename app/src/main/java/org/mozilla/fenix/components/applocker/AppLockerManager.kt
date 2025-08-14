@@ -21,6 +21,8 @@ class AppLockerManager(private val context: Context) {
         private const val APP_LOCKER_SERVICE_NAME = "org.mozilla.fenix.components.applocker.AppLockAccessibilityService"
     }
 
+    private val appInfoCache = AppInfoCache()
+
     /**
      * Check if App Locker is enabled.
      */
@@ -86,6 +88,15 @@ class AppLockerManager(private val context: Context) {
      * Get list of installed apps that can be locked.
      */
     fun getInstallableApps(): List<AppInfo> {
+        return appInfoCache.getCachedApps {
+            loadInstallableApps()
+        }
+    }
+
+    /**
+     * Load apps from system (called by cache when needed).
+     */
+    private fun loadInstallableApps(): List<AppInfo> {
         if (!hasQueryAllPackagesPermission()) {
             return emptyList()
         }
@@ -97,16 +108,79 @@ class AppLockerManager(private val context: Context) {
             .filter { appInfo ->
                 // Filter out system apps and launcher apps
                 val launchIntent = packageManager.getLaunchIntentForPackage(appInfo.packageName)
-                launchIntent != null && appInfo.packageName != context.packageName
+                launchIntent != null && 
+                appInfo.packageName != context.packageName &&
+                !isSystemApp(appInfo.packageName)
             }
             .map { appInfo ->
                 AppInfo(
                     packageName = appInfo.packageName,
                     name = appInfo.loadLabel(packageManager).toString(),
-                    icon = appInfo.loadIcon(packageManager),
-                    isLocked = false // This will be updated from database
+                    icon = try {
+                        appInfo.loadIcon(packageManager)
+                    } catch (e: Exception) {
+                        null
+                    },
+                    isLocked = context.settings().appLockerProtectedApps.contains(appInfo.packageName)
                 )
             }
             .sortedBy { it.name }
+    }
+
+    /**
+     * Refresh app cache (call when apps are installed/uninstalled).
+     */
+    fun refreshAppsCache() {
+        appInfoCache.invalidateCache()
+    }
+
+    /**
+     * Check if an app is a system app that should be filtered out.
+     */
+    private fun isSystemApp(packageName: String): Boolean {
+        // Don't filter Google/Android apps as they can be locked
+        val systemPackagesToFilter = setOf(
+            "android",
+            "com.android.systemui",
+            "com.android.launcher",
+            "com.android.launcher3",
+            "com.google.android.inputmethod",
+            "com.android.phone",
+            "com.android.contacts",
+            "com.android.dialer",
+            "com.android.settings"
+        )
+        
+        return systemPackagesToFilter.any { packageName.startsWith(it) }
+    }
+
+    /**
+     * Get browser apps specifically.
+     */
+    fun getBrowserApps(): List<AppInfo> {
+        val browserPackages = setOf(
+            "com.android.chrome",
+            "com.chrome.beta",
+            "com.chrome.dev", 
+            "com.chrome.canary",
+            "org.mozilla.firefox",
+            "org.mozilla.firefox_beta",
+            "org.mozilla.fenix",
+            "com.microsoft.emmx",
+            "com.opera.browser",
+            "com.opera.browser.beta",
+            "com.opera.mini.native",
+            "com.brave.browser",
+            "com.duckduckgo.mobile.android",
+            "com.kiwibrowser.browser",
+            "com.sec.android.app.sbrowser",
+            "com.UCMobile.intl",
+            "org.mozilla.focus",
+            "com.yandex.browser"
+        )
+        
+        return getInstallableApps().filter { 
+            browserPackages.contains(it.packageName) 
+        }
     }
 }

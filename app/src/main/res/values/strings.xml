@@ -56,6 +56,19 @@
     <string name="app_locker_permission_grant">Grant Permission</string>
     <string name="app_locker_permission_cancel">Cancel</string>
     
+    <!-- Enhanced App Locker UI strings -->
+    <string name="app_locker_select_apps_title">Select Apps to Lock</string>
+    <string name="app_locker_search_hint">Search apps...</string>
+    <string name="app_locker_browser_toggle_title">Lock All Browsers</string>
+    <string name="app_locker_browser_toggle_subtitle">%d browsers found</string>
+    <string name="app_locker_loading_apps">Loading installed apps...</string>
+    <string name="app_locker_no_apps_found">No apps found</string>
+    <string name="app_locker_save">Save</string>
+    <string name="app_locker_cancel">Cancel</string>
+    <string name="app_locker_pin_error">Incorrect PIN</string>
+    <string name="app_locker_unlock">Unlock</string>
+    <string name="app_locker_locked_message">Enter your PIN to unlock</string>
+    
     <!-- App Locker accessibility service description -->
     <string name="app_lock_accessibility_service_description">App Locker monitors app launches to protect selected apps with PIN authentication. This service only monitors app switching and does not access or modify app content.</string>
     
@@ -3143,7 +3156,7 @@
     <!-- Text for displaying the number of trackers blocked for a specific tracker category in the trackers blocked panel.
         %s is a placeholder for the name of the tracker category.
         %d is a placeholder for the number of trackers blocked. -->
-    <string name="trackers_blocked_panel_categorical_num_trackers_blocked">%s: %d</string>
+    <string name="trackers_blocked_panel_categorical_num_trackers_blocked" formatted="false">%s: %d</string>
     <!-- Description text for a dialog confirming whether the user wants to delete all data for current site.
         %s is a placeholder for the base domain of website. -->
     <string name="clear_site_data_dialog_description"><![CDATA[Removing cookies and site data for <b>%s</b> might log you out of websites and clear shopping carts.]]></string>
