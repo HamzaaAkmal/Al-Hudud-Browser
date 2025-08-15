@@ -15,6 +15,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.applocker.IslamicTextChallengeActivity
+import org.mozilla.fenix.components.security.SecurityManager
+import org.mozilla.fenix.ext.settings
 
 /**
  * Handler for device admin protection dialog and settings navigation.
@@ -24,6 +26,7 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
 
     private val context: Context get() = fragment.requireContext()
     private val deviceAdminManager = DeviceAdminManager(context)
+    private val securityManager = SecurityManager(context)
     
     // Activity result launcher for Islamic Text Challenge
     private val islamicChallengeResultLauncher: ActivityResultLauncher<Intent> = 
@@ -48,16 +51,50 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
      * Show confirmation dialog when user wants to disable protection.
      */
     private fun showDisableConfirmationDialog() {
-        AlertDialog.Builder(context)
-            .setTitle(context.getString(R.string.device_admin_protection_dialog_title))
-            .setMessage("To disable Device Admin protection, you must complete an Islamic text typing challenge. This ensures authorized access only.")
-            .setPositiveButton("Continue") { _, _ ->
-                startIslamicTextChallenge()
+        // Check if App Locker is enabled - if so, redirect to browser settings
+        if (context.settings().isAppLockerEnabled) {
+            AlertDialog.Builder(context)
+                .setTitle("Security Protection Active")
+                .setMessage("Device Admin protection cannot be disabled while App Locker is active.\n\nTo disable Device Admin protection:\n1. Open the browser\n2. Go to Privacy & Security\n3. Disable App Locker first\n4. Then return here to disable Device Admin")
+                .setPositiveButton("Open Browser Settings") { _, _ ->
+                    openBrowserSecuritySettings()
+                }
+                .setNegativeButton("Cancel") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        } else {
+            // App Locker is disabled, allow normal device admin disable flow
+            AlertDialog.Builder(context)
+                .setTitle(context.getString(R.string.device_admin_protection_dialog_title))
+                .setMessage("To disable Device Admin protection, you must complete an Islamic text typing challenge. This ensures authorized access only.")
+                .setPositiveButton("Continue") { _, _ ->
+                    startIslamicTextChallenge()
+                }
+                .setNegativeButton(context.getString(R.string.device_admin_protection_dialog_cancel)) { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        }
+    }
+
+    /**
+     * Open browser security settings.
+     */
+    private fun openBrowserSecuritySettings() {
+        try {
+            // Launch browser with security settings
+            val packageName = context.packageName
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+            if (launchIntent != null) {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                // Add extra to navigate directly to security settings if supported
+                launchIntent.putExtra("navigate_to", "security_settings")
+                context.startActivity(launchIntent)
             }
-            .setNegativeButton(context.getString(R.string.device_admin_protection_dialog_cancel)) { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+        } catch (e: Exception) {
+            Toast.makeText(context, "Please open the browser manually and go to Privacy & Security settings", Toast.LENGTH_LONG).show()
+        }
     }
 
     /**

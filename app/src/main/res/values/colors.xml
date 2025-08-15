@@ -392,4 +392,10 @@
     <!-- Extensions disabled icon fill colors -->
     <color name="mozac_ui_extensions_warning_bg_fill_critical" tools:ignore="UnusedResources">@color/fx_mobile_icon_color_secondary</color>
     <color name="mozac_ui_extensions_warning_fill_critical" tools:ignore="UnusedResources">@color/fx_mobile_icon_color_critical</color>
+
+    <!-- Security overlay colors -->
+    <color name="security_overlay_background">#F2000000</color> <!-- rgba(0,0,0,0.95) -->
+    <color name="security_warning_color">#FFFF9800</color>
+    <color name="security_accent_color">#FF6200EA</color>
+    <color name="security_accent_border">#FF7C4DFF</color>
 </resources>

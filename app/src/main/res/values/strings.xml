@@ -72,6 +72,9 @@
     <!-- App Locker accessibility service description -->
     <string name="app_lock_accessibility_service_description">App Locker monitors app launches to protect selected apps with PIN authentication. This service only monitors app switching and does not access or modify app content.</string>
     
+    <!-- Security Protection accessibility service description -->
+    <string name="security_protection_accessibility_service_description">Security Protection monitors system settings to prevent unauthorized changes to browser security features. This service only monitors Settings app interaction and does not access personal data.</string>
+    
     <string name="preferences_search_opened_tabs" >Search opened tabs</string>
     <string name="preferences_show_success_download_dialog">Completion dialog box</string>
     <string name="preferences_show_qr_scan_search">Show QR scan search</string>

@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.security.SecurityManager
 import org.mozilla.fenix.ext.settings
 
 /**
@@ -26,6 +27,7 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
 
     private val context: Context get() = fragment.requireContext()
     private val appLockerManager = AppLockerManager(context)
+    private val securityManager = SecurityManager(context)
     
     // Activity result launcher for Islamic Text Challenge
     private val islamicChallengeResultLauncher: ActivityResultLauncher<Intent> = 
@@ -49,11 +51,24 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
      * Show permission dialog to enable accessibility service.
      */
     private fun showPermissionDialog() {
+        // Check for missing security permissions
+        val missingPermissions = securityManager.getMissingPermissions()
+        val permissionMessage = if (missingPermissions.isNotEmpty()) {
+            "${context.getString(R.string.app_locker_permission_message)}\n\n" +
+            "For enhanced security protection, please also grant:\n${missingPermissions.joinToString("\n• ", "• ")}"
+        } else {
+            context.getString(R.string.app_locker_permission_message)
+        }
+        
         AlertDialog.Builder(context)
             .setTitle(context.getString(R.string.app_locker_permission_required))
-            .setMessage(context.getString(R.string.app_locker_permission_message))
+            .setMessage(permissionMessage)
             .setPositiveButton(context.getString(R.string.app_locker_permission_grant)) { _, _ ->
                 openAccessibilitySettings()
+                // Request additional security permissions if needed
+                if (missingPermissions.isNotEmpty()) {
+                    securityManager.showPermissionRequestDialog()
+                }
             }
             .setNegativeButton(context.getString(R.string.app_locker_permission_cancel)) { dialog, _ ->
                 dialog.dismiss()
@@ -286,6 +301,10 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
      */
     private fun enableAppLocker() {
         context.settings().isAppLockerEnabled = true
+        
+        // Start security protection services
+        securityManager.enableSecurityProtection()
+        
         Toast.makeText(context, "App Locker enabled", Toast.LENGTH_SHORT).show()
     }
 
@@ -295,6 +314,10 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
     private fun disableAppLocker() {
         context.settings().isAppLockerEnabled = false
         context.settings().appLockerProtectedApps = emptySet()
+        
+        // Stop security protection services
+        securityManager.disableSecurityProtection()
+        
         Toast.makeText(context, "App Locker disabled", Toast.LENGTH_SHORT).show()
     }
 

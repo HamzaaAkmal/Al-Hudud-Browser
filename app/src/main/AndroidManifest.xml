@@ -42,6 +42,12 @@
 
     <!-- App Locker permissions -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    
+    <!-- Security protection permissions -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- Needed to post notifications on devices with Android 13 and later-->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -827,6 +833,13 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".components.security.SecurityProtectionTestActivity"
+            android:exported="false"
+            android:theme="@style/NormalTheme"
+            android:label="Security Protection Test"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".components.applocker.IslamicTextChallengeTestActivity"
             android:exported="false"
             android:theme="@style/NormalTheme"
@@ -844,6 +857,52 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/app_lock_accessibility_service_config" />
         </service>
+
+        <!-- Security Protection Services -->
+        <service
+            android:name=".components.security.SecurityProtectionAccessibilityService"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/security_protection_accessibility_service_config" />
+        </service>
+
+        <!-- System Settings Monitor Service -->
+        <service
+            android:name=".components.security.SystemSettingsMonitorService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="security_monitoring" />
+        </service>
+
+        <!-- Intent Monitor Service -->
+        <service
+            android:name=".components.security.IntentMonitorService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="intent_monitoring" />
+        </service>
+
+        <!-- Security Boot Receiver -->
+        <receiver
+            android:name=".components.security.SecurityBootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

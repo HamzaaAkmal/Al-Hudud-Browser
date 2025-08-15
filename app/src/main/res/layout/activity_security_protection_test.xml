@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Test activity layout for security protection testing -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@android:color/white">
+
+    <!-- Title -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="Security Protection Test"
+        android:textAlignment="center"
+        android:textColor="@android:color/black"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <!-- Status Display -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginBottom="24dp"
+        android:background="@android:color/darker_gray"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/status_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Loading status..."
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:fontFamily="monospace" />
+
+    </ScrollView>
+
+    <!-- Test Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/check_permissions_button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="8dp"
+            android:text="Check &amp; Request Permissions"
+            android:textAllCaps="false"
+            android:background="@color/security_accent_color"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/test_accessibility_button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="8dp"
+            android:text="Test Accessibility Protection Overlay"
+            android:textAllCaps="false"
+            android:background="@color/security_warning_color"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/test_device_admin_button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="8dp"
+            android:text="Test Device Admin Protection Overlay"
+            android:textAllCaps="false"
+            android:background="@color/security_warning_color"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/test_app_info_button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="8dp"
+            android:text="Test App Info Protection Overlay"
+            android:textAllCaps="false"
+            android:background="@color/security_warning_color"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/test_overlay_permission_button"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:text="Test Overlay Permission Protection"
+            android:textAllCaps="false"
+            android:background="@color/security_warning_color"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
+    <!-- Instructions -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Instructions:\n1. Check permissions first\n2. Test all overlays to verify they appear\n3. Enable App Locker to activate protection\n4. Try all Settings paths to test comprehensive blocking:\n   • Long-press app icon → App info\n   • Settings → Special access → Draw over apps\n   • Settings → Accessibility (any path)\n   • Settings → Device admin (any path)"
+        android:textColor="@android:color/darker_gray"
+        android:textSize="12sp"
+        android:lineSpacingExtra="2dp" />
+
+</LinearLayout>

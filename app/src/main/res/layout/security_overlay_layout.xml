@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Security overlay layout for blocking unauthorized access to system settings -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/security_overlay_background"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Security Icon -->
+    <ImageView
+        android:id="@+id/security_icon"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
+        android:layout_marginBottom="24dp"
+        android:src="@drawable/ic_warning_amber_24"
+        android:contentDescription="Security Warning" />
+
+    <!-- Security Title -->
+    <TextView
+        android:id="@+id/security_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="⚠️ ACTION NOT ALLOWED"
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="24sp"
+        android:textStyle="bold" />
+
+    <!-- Security Message -->
+    <TextView
+        android:id="@+id/security_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:text="For safety and security purposes,\nthis action has been blocked."
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:lineSpacingExtra="4dp" />
+
+    <!-- Action Button -->
+    <Button
+        android:id="@+id/security_button"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/security_button_background"
+        android:text="Go Back to Home"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:elevation="4dp" />
+
+</LinearLayout>
