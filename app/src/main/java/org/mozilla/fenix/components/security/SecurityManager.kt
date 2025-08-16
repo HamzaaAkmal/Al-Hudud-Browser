@@ -27,6 +27,10 @@ class SecurityManager(private val context: Context) {
         const val REQUEST_USAGE_STATS_PERMISSION = 1002
     }
 
+    private val securityBypassManager: SecurityBypassManager by lazy {
+        SecurityBypassManager(context)
+    }
+
     /**
      * Check if all required permissions are granted for security protection.
      */
@@ -133,6 +137,11 @@ class SecurityManager(private val context: Context) {
             
             Log.i(TAG, "Security services started")
             
+            // Note: Accessibility services (SecurityProtectionAccessibilityService and 
+            // KeywordProtectionAccessibilityService) must be enabled manually by user
+            // through Android accessibility settings. They cannot be started programmatically.
+            Log.d(TAG, "Reminder: Accessibility services must be enabled manually in Settings")
+            
         } catch (e: Exception) {
             Log.e(TAG, "Error starting security services", e)
         }
@@ -177,6 +186,39 @@ class SecurityManager(private val context: Context) {
     fun disableSecurityProtection() {
         Log.i(TAG, "Disabling system-level security protection")
         stopSecurityServices()
+        
+        // Clear any active bypass window when disabling protection
+        securityBypassManager.clearBypassWindow()
+    }
+
+    /**
+     * Record successful challenge completion and start bypass window.
+     */
+    fun recordChallengeCompletion() {
+        securityBypassManager.recordChallengeCompletion()
+        Log.i(TAG, "Challenge completion recorded, bypass window started")
+    }
+
+    /**
+     * Check if currently within bypass window.
+     */
+    fun isWithinBypassWindow(): Boolean {
+        return securityBypassManager.isWithinBypassWindow()
+    }
+
+    /**
+     * Get remaining bypass time in milliseconds.
+     */
+    fun getRemainingBypassTime(): Long {
+        return securityBypassManager.getRemainingBypassTime()
+    }
+
+    /**
+     * Clear the bypass window manually.
+     */
+    fun clearBypassWindow() {
+        securityBypassManager.clearBypassWindow()
+        Log.i(TAG, "Bypass window manually cleared")
     }
 
     /**

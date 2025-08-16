@@ -8,6 +8,7 @@ import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import org.mozilla.fenix.components.security.SecurityBypassManager
 import org.mozilla.fenix.components.security.SecurityManager
 import org.mozilla.fenix.ext.settings
 
@@ -26,6 +27,10 @@ class DeviceAdminReceiver : DeviceAdminReceiver() {
         super.onEnabled(context, intent)
         Log.i(TAG, "Device admin protection enabled")
         
+        // Update the actual device admin state
+        val securityBypassManager = SecurityBypassManager(context)
+        securityBypassManager.updateDeviceAdminState(true)
+        
         // Start security services if App Locker is enabled
         if (context.settings().isAppLockerEnabled) {
             try {
@@ -40,16 +45,32 @@ class DeviceAdminReceiver : DeviceAdminReceiver() {
     override fun onDisabled(context: Context, intent: Intent) {
         super.onDisabled(context, intent)
         Log.i(TAG, "Device admin protection disabled")
+        
+        // Update the actual device admin state
+        val securityBypassManager = SecurityBypassManager(context)
+        securityBypassManager.updateDeviceAdminState(false)
     }
 
     override fun onDisableRequested(context: Context, intent: Intent): CharSequence? {
         Log.w(TAG, "Device admin disable requested")
         
-        // If App Locker is enabled, show enhanced warning
+        val securityBypassManager = SecurityBypassManager(context)
+        
+        // If within bypass window, allow with warning
+        if (securityBypassManager.isWithinBypassWindow()) {
+            val remainingTime = securityBypassManager.getRemainingBypassTime()
+            val remainingMinutes = remainingTime / (60 * 1000)
+            
+            return "Device admin protection will be disabled. " +
+                   "You have ${remainingMinutes} minutes remaining in your bypass window. " +
+                   "This will reduce security protection."
+        }
+        
+        // If App Locker is enabled but not in bypass window, show enhanced warning
         return if (context.settings().isAppLockerEnabled) {
             "This browser is protected by App Locker security system. " +
             "Disabling device admin protection will reduce security. " +
-            "Consider disabling App Locker first from the browser settings."
+            "Complete the App Locker challenge first to disable protection safely."
         } else {
             "Disabling device admin protection will allow the browser to be uninstalled without extra confirmation."
         }

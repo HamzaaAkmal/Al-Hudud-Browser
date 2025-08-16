@@ -75,7 +75,7 @@
             android:layout_marginBottom="12dp"
             android:background="@drawable/success_button_background"
             android:padding="16dp"
-            android:text="Test Device Admin Disable Challenge"
+            android:text="Test App Locker Challenge (Device Admin Removed)"
             android:textColor="@android:color/white"
             android:textSize="16sp"
             android:textStyle="bold" />

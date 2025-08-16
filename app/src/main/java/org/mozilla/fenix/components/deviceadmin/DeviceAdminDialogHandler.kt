@@ -14,7 +14,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.applocker.IslamicTextChallengeActivity
 import org.mozilla.fenix.components.security.SecurityManager
 import org.mozilla.fenix.ext.settings
 
@@ -27,12 +26,6 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
     private val context: Context get() = fragment.requireContext()
     private val deviceAdminManager = DeviceAdminManager(context)
     private val securityManager = SecurityManager(context)
-    
-    // Activity result launcher for Islamic Text Challenge
-    private val islamicChallengeResultLauncher: ActivityResultLauncher<Intent> = 
-        fragment.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            handleIslamicChallengeResult(result)
-        }
 
     /**
      * Handle device admin protection menu click.
@@ -53,23 +46,39 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
     private fun showDisableConfirmationDialog() {
         // Check if App Locker is enabled - if so, redirect to browser settings
         if (context.settings().isAppLockerEnabled) {
-            AlertDialog.Builder(context)
-                .setTitle("Security Protection Active")
-                .setMessage("Device Admin protection cannot be disabled while App Locker is active.\n\nTo disable Device Admin protection:\n1. Open the browser\n2. Go to Privacy & Security\n3. Disable App Locker first\n4. Then return here to disable Device Admin")
-                .setPositiveButton("Open Browser Settings") { _, _ ->
-                    openBrowserSecuritySettings()
-                }
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }
-                .show()
+            // Check if we're within bypass window from recent App Locker challenge
+            if (securityManager.isWithinBypassWindow()) {
+                val remainingMinutes = securityManager.getRemainingBypassTime() / (60 * 1000)
+                
+                AlertDialog.Builder(context)
+                    .setTitle("Bypass Window Active")
+                    .setMessage("You have ${remainingMinutes} minutes remaining from your recent App Locker challenge.\n\nYou can now disable Device Admin protection directly.")
+                    .setPositiveButton("Disable Device Admin") { _, _ ->
+                        openDeviceAdminSettingsForDisable()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
+            } else {
+                AlertDialog.Builder(context)
+                    .setTitle("Security Protection Active")
+                    .setMessage("Device Admin protection cannot be disabled while App Locker is active.\n\nTo disable Device Admin protection:\n1. Open the browser\n2. Go to Privacy & Security\n3. Complete the App Locker challenge to disable it\n4. Then return here within 5 minutes to disable Device Admin")
+                    .setPositiveButton("Open Browser Settings") { _, _ ->
+                        openBrowserSecuritySettings()
+                    }
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
+            }
         } else {
-            // App Locker is disabled, allow normal device admin disable flow
+            // App Locker is disabled, allow direct device admin disable
             AlertDialog.Builder(context)
                 .setTitle(context.getString(R.string.device_admin_protection_dialog_title))
-                .setMessage("To disable Device Admin protection, you must complete an Islamic text typing challenge. This ensures authorized access only.")
-                .setPositiveButton("Continue") { _, _ ->
-                    startIslamicTextChallenge()
+                .setMessage("Device Admin protection will be disabled. This will allow the browser to be uninstalled without extra confirmation.")
+                .setPositiveButton("Disable Protection") { _, _ ->
+                    openDeviceAdminSettingsForDisable()
                 }
                 .setNegativeButton(context.getString(R.string.device_admin_protection_dialog_cancel)) { dialog, _ ->
                     dialog.dismiss()
@@ -98,34 +107,6 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
     }
 
     /**
-     * Start Islamic Text Challenge for Device Admin disable
-     */
-    private fun startIslamicTextChallenge() {
-        val intent = IslamicTextChallengeActivity.createIntent(
-            context, 
-            IslamicTextChallengeActivity.TYPE_DEVICE_ADMIN_DISABLE
-        )
-        islamicChallengeResultLauncher.launch(intent)
-    }
-
-    /**
-     * Handle result from Islamic Text Challenge
-     */
-    private fun handleIslamicChallengeResult(result: ActivityResult) {
-        when (result.resultCode) {
-            IslamicTextChallengeActivity.RESULT_CHALLENGE_SUCCESS -> {
-                // Challenge passed - proceed with opening device admin settings
-                openDeviceAdminSettingsForDisable()
-                Toast.makeText(context, "Challenge completed successfully. Opening Device Admin settings.", Toast.LENGTH_LONG).show()
-            }
-            IslamicTextChallengeActivity.RESULT_CHALLENGE_FAILED -> {
-                // Challenge failed - show message and do nothing
-                Toast.makeText(context, "Challenge failed. Device Admin protection remains enabled.", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
-    /**
      * Open device admin settings using the appropriate intent.
      */
     private fun openDeviceAdminSettings() {
@@ -143,12 +124,13 @@ class DeviceAdminDialogHandler(private val fragment: Fragment) {
     }
 
     /**
-     * Open device admin settings specifically for disable (after challenge success)
+     * Open device admin settings for disable.
      */
     private fun openDeviceAdminSettingsForDisable() {
         try {
             val intent = deviceAdminManager.getDisableDeviceAdminIntent()
             context.startActivity(intent)
+            Toast.makeText(context, "Opening Device Admin settings for disable.", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             showErrorDialog()
         }

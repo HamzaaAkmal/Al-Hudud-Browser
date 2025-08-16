@@ -63,6 +63,7 @@ class SystemSettingsMonitorService : Service() {
     private var isMonitoring = false
     
     private lateinit var securityOverlayManager: SecurityOverlayManager
+    private lateinit var securityBypassManager: SecurityBypassManager
     private lateinit var usageStatsManager: UsageStatsManager
     
     private var lastCheckedTime = 0L
@@ -91,6 +92,7 @@ class SystemSettingsMonitorService : Service() {
         Log.d(TAG, "SystemSettingsMonitorService created")
         
         securityOverlayManager = SecurityOverlayManager(this)
+        securityBypassManager = SecurityBypassManager(this)
         usageStatsManager = getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         
         createNotificationChannel()
@@ -236,20 +238,36 @@ class SystemSettingsMonitorService : Service() {
             if (settingsAccessDetected && isSettingsAppActive && !protectionTriggered) {
                 when {
                     accessibilitySettingsDetected -> {
-                        Log.i(TAG, "Accessibility settings access detected (any path) - triggering protection")
-                        triggerAccessibilityProtection()
+                        if (securityBypassManager.shouldTriggerProtection()) {
+                            Log.i(TAG, "Accessibility settings access detected (any path) - triggering protection")
+                            triggerAccessibilityProtection()
+                        } else {
+                            Log.d(TAG, "Accessibility settings access detected but protection bypassed")
+                        }
                     }
                     deviceAdminSettingsDetected -> {
-                        Log.i(TAG, "Device admin settings access detected (any path) - triggering protection")
-                        triggerDeviceAdminProtection()
+                        if (securityBypassManager.shouldTriggerDeviceAdminProtection()) {
+                            Log.i(TAG, "Device admin settings access detected (any path) - triggering protection")
+                            triggerDeviceAdminProtection()
+                        } else {
+                            Log.d(TAG, "Device admin settings access detected but protection bypassed or device admin not active")
+                        }
                     }
                     appInfoSettingsDetected -> {
-                        Log.i(TAG, "App info settings access detected - checking if browser targeted")
-                        checkAppInfoTarget()
+                        if (securityBypassManager.shouldTriggerProtection()) {
+                            Log.i(TAG, "App info settings access detected - checking if browser targeted")
+                            checkAppInfoTarget()
+                        } else {
+                            Log.d(TAG, "App info settings access detected but protection bypassed")
+                        }
                     }
                     overlayPermissionSettingsDetected -> {
-                        Log.i(TAG, "Overlay permission settings access detected - checking if browser targeted")
-                        checkOverlayPermissionTarget()
+                        if (securityBypassManager.shouldTriggerProtection()) {
+                            Log.i(TAG, "Overlay permission settings access detected - checking if browser targeted")
+                            checkOverlayPermissionTarget()
+                        } else {
+                            Log.d(TAG, "Overlay permission settings access detected but protection bypassed")
+                        }
                     }
                 }
             }
@@ -317,7 +335,7 @@ class SystemSettingsMonitorService : Service() {
     private fun checkAppInfoTarget() {
         // This would be enhanced with intent monitoring in a real implementation
         // For now, we'll protect proactively when app info is accessed during active protection
-        if (settings().isAppLockerEnabled) {
+        if (securityBypassManager.shouldTriggerProtection()) {
             Log.w(TAG, "SECURITY: Blocking app info access while protection is active")
             triggerAppInfoProtection()
         }
@@ -329,7 +347,7 @@ class SystemSettingsMonitorService : Service() {
     private fun checkOverlayPermissionTarget() {
         // This would be enhanced with intent monitoring in a real implementation
         // For now, we'll protect proactively when overlay permission settings are accessed
-        if (settings().isAppLockerEnabled) {
+        if (securityBypassManager.shouldTriggerProtection()) {
             Log.w(TAG, "SECURITY: Blocking overlay permission modification while protection is active")
             triggerOverlayPermissionProtection()
         }

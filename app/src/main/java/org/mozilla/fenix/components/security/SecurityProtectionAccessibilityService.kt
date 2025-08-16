@@ -26,6 +26,7 @@ class SecurityProtectionAccessibilityService : AccessibilityService() {
     }
 
     private lateinit var securityOverlayManager: SecurityOverlayManager
+    private lateinit var securityBypassManager: SecurityBypassManager
     private var browserServiceComponent: ComponentName? = null
     private var isMonitoringSettings = false
 
@@ -34,6 +35,7 @@ class SecurityProtectionAccessibilityService : AccessibilityService() {
         Log.d(TAG, "Security protection accessibility service connected")
         
         securityOverlayManager = SecurityOverlayManager(this)
+        securityBypassManager = SecurityBypassManager(this)
         
         // Get browser's accessibility service component name
         browserServiceComponent = ComponentName(
@@ -81,8 +83,10 @@ class SecurityProtectionAccessibilityService : AccessibilityService() {
                 className?.contains("AccessibilitySettings") == true ||
                 className?.contains("ToggleAccessibilityService") == true ||
                 className?.contains("accessibility") == true -> {
-                    Log.i(TAG, "Accessibility settings detected (any path)")
-                    isMonitoringSettings = true
+                    if (securityBypassManager.shouldTriggerProtection()) {
+                        Log.i(TAG, "Accessibility settings detected (any path)")
+                        isMonitoringSettings = true
+                    }
                 }
                 
                 // Check for device admin settings (all paths)
@@ -90,17 +94,21 @@ class SecurityProtectionAccessibilityService : AccessibilityService() {
                 className?.contains("DeviceAdminAdd") == true ||
                 className?.contains("SecuritySettings") == true ||
                 className?.contains("device_admin") == true -> {
-                    Log.i(TAG, "Device admin settings detected (any path)")
-                    triggerDeviceAdminProtection()
+                    if (securityBypassManager.shouldTriggerDeviceAdminProtection()) {
+                        Log.i(TAG, "Device admin settings detected (any path)")
+                        triggerDeviceAdminProtection()
+                    }
                 }
                 
                 // Check for app info settings (force stop, disable, uninstall)
                 className?.contains("InstalledAppDetailsActivity") == true ||
                 className?.contains("AppInfoBase") == true ||
                 className?.contains("ApplicationInfo") == true -> {
-                    Log.i(TAG, "App info settings detected")
-                    if (isBrowserAppInfoTarget(event)) {
-                        triggerAppInfoProtection()
+                    if (securityBypassManager.shouldTriggerProtection()) {
+                        Log.i(TAG, "App info settings detected")
+                        if (isBrowserAppInfoTarget(event)) {
+                            triggerAppInfoProtection()
+                        }
                     }
                 }
                 
@@ -108,9 +116,11 @@ class SecurityProtectionAccessibilityService : AccessibilityService() {
                 className?.contains("DrawOverlayDetails") == true ||
                 className?.contains("OverlayPermission") == true ||
                 className?.contains("SpecialAccess") == true -> {
-                    Log.i(TAG, "Overlay permission settings detected")
-                    if (isBrowserOverlayTarget(event)) {
-                        triggerOverlayPermissionProtection()
+                    if (securityBypassManager.shouldTriggerProtection()) {
+                        Log.i(TAG, "Overlay permission settings detected")
+                        if (isBrowserOverlayTarget(event)) {
+                            triggerOverlayPermissionProtection()
+                        }
                     }
                 }
             }
@@ -227,7 +237,7 @@ class SecurityProtectionAccessibilityService : AccessibilityService() {
     private fun isBrowserAppInfoTarget(event: AccessibilityEvent): Boolean {
         // In a real implementation, you would check the intent extras or window content
         // For now, we'll assume any app info access during protection is suspicious
-        return settings().isAppLockerEnabled
+        return securityBypassManager.shouldTriggerProtection()
     }
 
     /**
@@ -236,7 +246,7 @@ class SecurityProtectionAccessibilityService : AccessibilityService() {
     private fun isBrowserOverlayTarget(event: AccessibilityEvent): Boolean {
         // In a real implementation, you would check the package name in the intent
         // For now, we'll assume any overlay permission access during protection is suspicious
-        return settings().isAppLockerEnabled
+        return securityBypassManager.shouldTriggerProtection()
     }
 
     /**

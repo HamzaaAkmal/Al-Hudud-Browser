@@ -113,6 +113,62 @@ to modify this setting.""",
     }
 
     /**
+     * Show keyword protection overlay.
+     * Blocks harmful keyword searches detected across apps.
+     */
+    fun showKeywordProtectionOverlay(packageName: String) {
+        val appName = getAppName(packageName)
+        showSecurityOverlay(
+            iconRes = R.drawable.ic_warning_amber_24,
+            title = "⚠️ CONTENT BLOCKED",
+            message = """Inappropriate content detected in $appName.
+
+For your safety and spiritual well-being, 
+this search has been blocked.
+
+Consider using this time for beneficial 
+activities like prayer, learning, or 
+helping others.""",
+            buttonText = "Return to Home"
+        )
+    }
+
+    /**
+     * Get a user-friendly app name from package name.
+     */
+    private fun getAppName(packageName: String): String {
+        return when (packageName) {
+            "com.facebook.katana" -> "Facebook"
+            "com.instagram.android" -> "Instagram"
+            "com.google.android.youtube" -> "YouTube"
+            "com.google.android.apps.chrome", "com.android.chrome" -> "Chrome"
+            "com.twitter.android" -> "Twitter"
+            "com.whatsapp" -> "WhatsApp"
+            "com.snapchat.android" -> "Snapchat"
+            "com.tiktok" -> "TikTok"
+            "com.reddit.frontpage" -> "Reddit"
+            "org.telegram.messenger" -> "Telegram"
+            "com.discord" -> "Discord"
+            "com.pinterest" -> "Pinterest"
+            "com.tumblr" -> "Tumblr"
+            "com.opera.browser" -> "Opera"
+            "org.mozilla.firefox" -> "Firefox"
+            "com.microsoft.emmx" -> "Edge"
+            "com.brave.browser" -> "Brave"
+            "com.duckduckgo.mobile.android" -> "DuckDuckGo"
+            else -> {
+                try {
+                    val packageManager = context.packageManager
+                    val appInfo = packageManager.getApplicationInfo(packageName, 0)
+                    packageManager.getApplicationLabel(appInfo).toString()
+                } catch (e: Exception) {
+                    "this app"
+                }
+            }
+        }
+    }
+
+    /**
      * Show the security overlay with specified content.
      */
     @SuppressLint("InflateParams")

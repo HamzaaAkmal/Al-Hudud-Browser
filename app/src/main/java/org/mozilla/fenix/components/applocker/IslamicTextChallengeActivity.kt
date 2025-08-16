@@ -25,6 +25,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.security.SecurityManager
 
 /**
  * Activity for Islamic Text Typing Challenge
@@ -35,7 +36,6 @@ class IslamicTextChallengeActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_CHALLENGE_TYPE = "challenge_type"
         const val TYPE_APP_LOCKER_DISABLE = "app_locker_disable"
-        const val TYPE_DEVICE_ADMIN_DISABLE = "device_admin_disable"
         const val CHALLENGE_TIME_LIMIT = 120000L // 2 minutes in milliseconds
         const val RESULT_CHALLENGE_SUCCESS = Activity.RESULT_OK
         const val RESULT_CHALLENGE_FAILED = Activity.RESULT_CANCELED
@@ -91,7 +91,6 @@ class IslamicTextChallengeActivity : AppCompatActivity() {
         // Set title based on challenge type
         val title = when (challengeType) {
             TYPE_APP_LOCKER_DISABLE -> "Security Verification Required - App Locker"
-            TYPE_DEVICE_ADMIN_DISABLE -> "Security Verification Required - Device Admin"
             else -> "Security Verification Required"
         }
         challengeTitleText.text = title
@@ -249,7 +248,12 @@ class IslamicTextChallengeActivity : AppCompatActivity() {
 
     private fun onChallengeSuccess() {
         challengeTimer?.cancel()
-        Toast.makeText(this, "Challenge completed successfully!", Toast.LENGTH_SHORT).show()
+        
+        // Record challenge completion for bypass window
+        val securityManager = SecurityManager(this)
+        securityManager.recordChallengeCompletion()
+        
+        Toast.makeText(this, "Challenge completed successfully! 5-minute bypass window activated.", Toast.LENGTH_LONG).show()
         
         setResult(RESULT_CHALLENGE_SUCCESS)
         finish()

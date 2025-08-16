@@ -75,6 +75,17 @@
     <!-- Security Protection accessibility service description -->
     <string name="security_protection_accessibility_service_description">Security Protection monitors system settings to prevent unauthorized changes to browser security features. This service only monitors Settings app interaction and does not access personal data.</string>
     
+    <!-- Keyword Protection accessibility service description -->
+    <string name="keyword_protection_accessibility_service_description">Keyword Protection monitors text input across apps to block inappropriate content for spiritual safety. This service only scans for harmful keywords and does not store or transmit personal data.</string>
+    
+    <!-- Keyword Protection strings -->
+    <string name="keyword_protection_title">Keyword Protection</string>
+    <string name="keyword_protection_summary">Block inappropriate content across apps</string>
+    <string name="keyword_protection_enabled_summary">Monitoring active across apps</string>
+    <string name="keyword_protection_disabled_summary">Not monitoring text input</string>
+    <string name="keyword_protection_setup_title">Enable Keyword Protection</string>
+    <string name="keyword_protection_setup_message">Keyword Protection will monitor text input across social media and browser apps to block harmful content.</string>
+    
     <string name="preferences_search_opened_tabs" >Search opened tabs</string>
     <string name="preferences_show_success_download_dialog">Completion dialog box</string>
     <string name="preferences_show_qr_scan_search">Show QR scan search</string>

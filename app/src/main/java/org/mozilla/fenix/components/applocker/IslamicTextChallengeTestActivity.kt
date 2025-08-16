@@ -90,11 +90,11 @@ class IslamicTextChallengeTestActivity : AppCompatActivity() {
     }
 
     private fun testDeviceAdminChallenge() {
-        statusText.text = "Testing Device Admin disable challenge..."
+        statusText.text = "Device Admin challenge removed - testing App Locker challenge instead..."
         
         val intent = IslamicTextChallengeActivity.createIntent(
             this, 
-            IslamicTextChallengeActivity.TYPE_DEVICE_ADMIN_DISABLE
+            IslamicTextChallengeActivity.TYPE_APP_LOCKER_DISABLE
         )
         islamicChallengeResultLauncher.launch(intent)
     }

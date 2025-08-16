@@ -124,6 +124,7 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
         val options = arrayOf(
             "Manage Protected Apps",
             "Change PIN",
+            "Keyword Protection",
             "Test Islamic Text Challenge",
             "Disable App Locker"
         )
@@ -134,8 +135,9 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
                 when (which) {
                     0 -> showAppSelectionDialog()
                     1 -> showChangePinDialog()
-                    2 -> showTestChallengeDialog()
-                    3 -> showDisableDialog()
+                    2 -> showKeywordProtectionDialog()
+                    3 -> showTestChallengeDialog()
+                    4 -> showDisableDialog()
                 }
             }
             .setNegativeButton("Cancel") { dialog, _ ->
@@ -181,6 +183,103 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
                 }
             }
             .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    /**
+     * Show keyword protection settings dialog.
+     */
+    private fun showKeywordProtectionDialog() {
+        val isEnabled = context.settings().isKeywordProtectionEnabled
+        
+        val message = """
+            Keyword Protection monitors text input across apps (Facebook, Instagram, YouTube, Chrome, etc.) to block inappropriate content for spiritual safety.
+            
+            When enabled, searches containing harmful keywords will be blocked with a protective overlay.
+            
+            Current status: ${if (isEnabled) "ENABLED" else "DISABLED"}
+            
+            Note: Requires Keyword Protection Accessibility Service to be enabled in Android Settings.
+        """.trimIndent()
+        
+        AlertDialog.Builder(context)
+            .setTitle("Keyword Protection Settings")
+            .setMessage(message)
+            .setPositiveButton(if (isEnabled) "Disable" else "Enable") { _, _ ->
+                toggleKeywordProtection()
+            }
+            .setNeutralButton("Manage Keywords") { _, _ ->
+                showKeywordManagementDialog()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    /**
+     * Toggle keyword protection on/off.
+     */
+    private fun toggleKeywordProtection() {
+        val wasEnabled = context.settings().isKeywordProtectionEnabled
+        context.settings().isKeywordProtectionEnabled = !wasEnabled
+        
+        val newStatus = if (!wasEnabled) "enabled" else "disabled"
+        Toast.makeText(context, "Keyword Protection $newStatus", Toast.LENGTH_SHORT).show()
+        
+        if (!wasEnabled) {
+            // Show instruction to enable accessibility service
+            showKeywordProtectionSetupDialog()
+        }
+    }
+
+    /**
+     * Show setup instructions for keyword protection.
+     */
+    private fun showKeywordProtectionSetupDialog() {
+        AlertDialog.Builder(context)
+            .setTitle("Enable Keyword Protection Service")
+            .setMessage("""
+                To activate Keyword Protection, you need to enable the "Keyword Protection" accessibility service:
+                
+                1. Open Android Settings
+                2. Go to Accessibility
+                3. Find "Keyword Protection" service
+                4. Turn it ON
+                
+                This service only monitors for harmful keywords and does not access personal data.
+            """.trimIndent())
+            .setPositiveButton("Open Settings") { _, _ ->
+                openAccessibilitySettings()
+            }
+            .setNegativeButton("Later") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    /**
+     * Show keyword management dialog.
+     */
+    private fun showKeywordManagementDialog() {
+        val currentKeywords = context.settings().bannedKeywords.toMutableSet()
+        val keywordsList = currentKeywords.joinToString(", ")
+        
+        AlertDialog.Builder(context)
+            .setTitle("Manage Banned Keywords")
+            .setMessage("""
+                Current banned keywords:
+                $keywordsList
+                
+                These keywords will trigger protection when detected in any monitored app.
+            """.trimIndent())
+            .setPositiveButton("Reset to Default") { _, _ ->
+                context.settings().bannedKeywords = setOf("porn", "anal", "sex", "xxx", "nude", "naked", "adult", "explicit")
+                Toast.makeText(context, "Keywords reset to default list", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Close") { dialog, _ ->
                 dialog.dismiss()
             }
             .show()

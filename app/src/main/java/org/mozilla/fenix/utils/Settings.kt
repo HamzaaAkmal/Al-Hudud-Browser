@@ -2636,4 +2636,38 @@ class Settings(private val appContext: Context) : PreferencesHolder {
         key = "app_locker_protected_apps",
         default = emptySet(),
     )
+
+    /**
+     * Timestamp when the last successful challenge was completed
+     * Used for bypass window functionality
+     */
+    var lastChallengeCompletionTime by longPreference(
+        key = "app_locker_last_challenge_time",
+        default = 0L,
+    )
+
+    /**
+     * Indicates if device admin protection is actually enabled
+     * This prevents false triggers before device admin activation
+     */
+    var isDeviceAdminActuallyEnabled by booleanPreference(
+        key = "device_admin_actually_enabled",
+        default = false,
+    )
+
+    /**
+     * Indicates if keyword protection is enabled
+     */
+    var isKeywordProtectionEnabled by booleanPreference(
+        key = "keyword_protection_enabled",
+        default = false,
+    )
+
+    /**
+     * List of banned keywords for protection
+     */
+    var bannedKeywords by stringSetPreference(
+        key = "banned_keywords",
+        default = setOf("porn", "anal", "sex", "xxx", "nude", "naked", "adult", "explicit"),
+    )
 }
