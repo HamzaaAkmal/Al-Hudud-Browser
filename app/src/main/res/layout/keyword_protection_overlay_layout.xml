@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Smart keyword protection overlay with countdown timer -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#DD000000"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Warning Icon -->
+    <ImageView
+        android:id="@+id/warning_icon"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginBottom="24dp"
+        android:src="@drawable/ic_warning_amber_24"
+        android:tint="@android:color/holo_red_light"
+        android:contentDescription="Warning" />
+
+    <!-- Warning Title -->
+    <TextView
+        android:id="@+id/warning_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="⚠️ PROHIBITED KEYWORD DETECTED"
+        android:textAlignment="center"
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <!-- Warning Message -->
+    <TextView
+        android:id="@+id/warning_message"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="Please remove the inappropriate keyword from your search."
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:lineSpacingExtra="4dp" />
+
+    <!-- Countdown Timer -->
+    <TextView
+        android:id="@+id/countdown_timer"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/security_button_background"
+        android:text="15"
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="48sp"
+        android:textStyle="bold"
+        android:gravity="center" />
+
+    <!-- Timer Label -->
+    <TextView
+        android:id="@+id/timer_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:text="seconds to fix"
+        android:textAlignment="center"
+        android:textColor="@android:color/white"
+        android:textSize="14sp" />
+
+    <!-- Fix Now Button -->
+    <Button
+        android:id="@+id/fix_now_button"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/security_button_background"
+        android:text="Fix Now"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- App Info -->
+    <TextView
+        android:id="@+id/app_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="App: Unknown"
+        android:textAlignment="center"
+        android:textColor="@color/fx_mobile_text_color_secondary"
+        android:textSize="12sp" />
+
+</LinearLayout>

@@ -10,6 +10,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
+import android.view.accessibility.AccessibilityManager
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import org.mozilla.fenix.ext.settings
 
@@ -270,6 +272,60 @@ class SecurityManager(private val context: Context) {
             requestOverlayPermission()
         } else if (!hasUsageStatsPermission()) {
             requestUsageStatsPermission()
+        }
+    }
+
+    /**
+     * Enable keyword protection by prompting user to enable accessibility service.
+     */
+    fun enableKeywordProtection() {
+        try {
+            // Check if KeywordProtectionAccessibilityService is already enabled
+            val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+            
+            val keywordServiceName = "${context.packageName}/org.mozilla.fenix.components.security.KeywordProtectionAccessibilityService"
+            
+            if (enabledServices?.contains(keywordServiceName) == true) {
+                Log.i(TAG, "KeywordProtectionAccessibilityService is already enabled")
+                return
+            }
+            
+            // Guide user to enable the accessibility service
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intent)
+            
+            // Show instruction toast
+            Toast.makeText(
+                context,
+                "Please enable 'Keyword Protection Service' in Accessibility settings to activate keyword protection",
+                Toast.LENGTH_LONG
+            ).show()
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error enabling keyword protection", e)
+        }
+    }
+
+    /**
+     * Check if keyword protection accessibility service is enabled.
+     */
+    fun isKeywordProtectionEnabled(): Boolean {
+        return try {
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+            
+            val keywordServiceName = "${context.packageName}/org.mozilla.fenix.components.security.KeywordProtectionAccessibilityService"
+            enabledServices?.contains(keywordServiceName) == true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking keyword protection status", e)
+            false
         }
     }
 }

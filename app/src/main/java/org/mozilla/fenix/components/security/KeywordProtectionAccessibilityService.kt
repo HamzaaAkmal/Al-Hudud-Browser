@@ -6,10 +6,20 @@ package org.mozilla.fenix.components.security
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.app.NotificationCompat
+import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.settings
 
 /**
@@ -20,6 +30,8 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "KeywordProtectionAS"
+        private const val NOTIFICATION_ID = 3001
+        private const val NOTIFICATION_CHANNEL_ID = "keyword_protection_service"
         
         // Common social media and browser packages to monitor
         private val MONITORED_PACKAGES = setOf(
@@ -31,23 +43,25 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
             "com.twitter.android", // Twitter/X
             "com.whatsapp", // WhatsApp
             "com.snapchat.android", // Snapchat
-            "com.tiktok", // TikTok
-            "com.reddit.frontpage", // Reddit
+            "com.tiktok.musically", // TikTok
             "org.telegram.messenger", // Telegram
+            "com.viber.voip", // Viber
             "com.discord", // Discord
-            "com.pinterest", // Pinterest
-            "com.tumblr", // Tumblr
-            "com.opera.browser", // Opera
+            "com.zhiliaoapp.musically", // TikTok
+            "com.ss.android.ugc.trill", // TikTok Lite
             "org.mozilla.firefox", // Firefox
+            "org.mozilla.fenix", // Firefox Fenix
+            "com.brave.browser", // Brave Browser
+            "com.opera.browser", // Opera
             "com.microsoft.emmx", // Edge
-            "com.brave.browser", // Brave
-            "com.duckduckgo.mobile.android", // DuckDuckGo
+            "com.duckduckgo.mobile.android" // DuckDuckGo
         )
     }
 
     private lateinit var securityOverlayManager: SecurityOverlayManager
     private lateinit var securityBypassManager: SecurityBypassManager
     private var isMonitoringActive = false
+    private var keywordCheckReceiver: BroadcastReceiver? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -58,10 +72,18 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
         
         configureService()
         updateMonitoringState()
+        createNotificationChannel()
+        startForegroundService()
+        registerKeywordCheckReceiver()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null || !shouldMonitor()) return
+        
+        // Skip monitoring during grace period
+        if (securityOverlayManager.isInGracePeriod()) {
+            return
+        }
         
         try {
             when (event.eventType) {
@@ -76,8 +98,13 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error processing accessibility event", e)
+            Log.e(TAG, "Error handling accessibility event", e)
         }
+    }
+
+    override fun onInterrupt() {
+        Log.d(TAG, "Keyword protection accessibility service interrupted")
+        isMonitoringActive = false
     }
 
     /**
@@ -89,12 +116,20 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
         // Skip our own package
         if (packageName == applicationContext.packageName) return
         
-        val inputText = event.text?.joinToString(" ") ?: ""
-        if (inputText.isBlank()) return
+        // Get text from available sources
+        val eventText = event.text?.joinToString(" ") ?: ""
+        val beforeText = event.beforeText?.toString() ?: ""
+        val contentDescription = event.contentDescription?.toString() ?: ""
         
-        if (containsBannedKeyword(inputText)) {
-            Log.w(TAG, "SECURITY: Banned keyword detected in $packageName")
-            triggerKeywordProtection(packageName, inputText)
+        // Check all text sources
+        val textsToCheck = listOf(eventText, beforeText, contentDescription).filter { it.isNotBlank() }
+        
+        for (text in textsToCheck) {
+            if (containsBannedKeyword(text)) {
+                Log.w(TAG, "SECURITY: Banned keyword detected in text input - $packageName")
+                triggerKeywordProtection(packageName, text)
+                return // Stop after first detection
+            }
         }
     }
 
@@ -110,12 +145,19 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
         // Check if focused element is a search or input field
         val sourceNode = event.source
         if (sourceNode != null && isSearchOrInputField(sourceNode)) {
-            Log.d(TAG, "Search/input field focused in $packageName")
+            Log.d(TAG, "Search/input field focused in $packageName - monitoring for text input")
+            
+            // Check current text content immediately
+            val currentText = sourceNode.text?.toString()
+            if (!currentText.isNullOrBlank() && containsBannedKeyword(currentText)) {
+                Log.w(TAG, "SECURITY: Banned keyword found in focused field - $packageName")
+                triggerKeywordProtection(packageName, currentText)
+            }
         }
     }
 
     /**
-     * Handle content changes to catch text input in various UI frameworks.
+     * Handle window content changes to scan for text content.
      */
     private fun handleContentChanged(event: AccessibilityEvent) {
         val packageName = event.packageName?.toString() ?: return
@@ -123,44 +165,23 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
         // Skip our own package
         if (packageName == applicationContext.packageName) return
         
-        // Check for text content in the changed view
-        val sourceNode = event.source
-        if (sourceNode != null) {
-            checkNodeForBannedContent(sourceNode, packageName)
+        // Only scan content for monitored packages to avoid performance issues
+        if (MONITORED_PACKAGES.contains(packageName)) {
+            scanNodeForKeywords(event.source, packageName)
         }
     }
 
     /**
-     * Check if an accessibility node represents a search or input field.
+     * Recursively scan accessibility node for banned keywords.
      */
-    private fun isSearchOrInputField(node: AccessibilityNodeInfo): Boolean {
+    private fun scanNodeForKeywords(node: AccessibilityNodeInfo?, packageName: String) {
+        if (node == null) return
+        
         try {
-            val className = node.className?.toString()?.lowercase()
-            val contentDesc = node.contentDescription?.toString()?.lowercase()
-            val hint = node.hintText?.toString()?.lowercase()
-            
-            val searchKeywords = listOf("search", "edit", "input", "text", "query")
-            
-            return searchKeywords.any { keyword ->
-                className?.contains(keyword) == true ||
-                contentDesc?.contains(keyword) == true ||
-                hint?.contains(keyword) == true
-            } || node.isEditable
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking input field", e)
-            return false
-        }
-    }
-
-    /**
-     * Recursively check a node and its children for banned content.
-     */
-    private fun checkNodeForBannedContent(node: AccessibilityNodeInfo, packageName: String) {
-        try {
-            // Check current node text
+            // Check text content
             val nodeText = node.text?.toString()
             if (!nodeText.isNullOrBlank() && containsBannedKeyword(nodeText)) {
-                Log.w(TAG, "SECURITY: Banned keyword detected in node content from $packageName")
+                Log.w(TAG, "SECURITY: Banned keyword found in content - $packageName")
                 triggerKeywordProtection(packageName, nodeText)
                 return
             }
@@ -168,20 +189,22 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
             // Check content description
             val contentDesc = node.contentDescription?.toString()
             if (!contentDesc.isNullOrBlank() && containsBannedKeyword(contentDesc)) {
-                Log.w(TAG, "SECURITY: Banned keyword detected in content description from $packageName")
+                Log.w(TAG, "SECURITY: Banned keyword found in content description - $packageName")
                 triggerKeywordProtection(packageName, contentDesc)
                 return
             }
             
-            // Recursively check children (limit depth to prevent performance issues)
-            for (i in 0 until minOf(node.childCount, 20)) {
+            // Recursively check child nodes (limit depth for performance)
+            for (i in 0 until minOf(node.childCount, 10)) {
                 val child = node.getChild(i)
                 if (child != null) {
-                    checkNodeForBannedContent(child, packageName)
+                    scanNodeForKeywords(child, packageName)
+                    // Note: recycle() is deprecated in newer Android versions
+                    // The system will handle cleanup automatically
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking node content", e)
+            Log.e(TAG, "Error scanning node for keywords", e)
         }
     }
 
@@ -189,103 +212,245 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
      * Check if text contains any banned keywords.
      */
     private fun containsBannedKeyword(text: String): Boolean {
-        val lowerText = text.lowercase().trim()
-        val bannedKeywords = settings().bannedKeywords
+        if (text.isBlank()) return false
         
-        return bannedKeywords.any { keyword ->
-            lowerText.contains(keyword.lowercase())
+        val bannedKeywords = settings().bannedKeywords
+        if (bannedKeywords.isEmpty()) {
+            Log.d(TAG, "No keywords configured for protection")
+            return false
         }
+        
+        // Normalize text for better matching
+        val normalizedText = text.lowercase().trim()
+        
+        // Check each keyword with multiple matching strategies
+        for (keyword in bannedKeywords) {
+            val normalizedKeyword = keyword.lowercase().trim()
+            if (normalizedKeyword.isEmpty()) continue
+            
+            // Exact match
+            if (normalizedText.contains(normalizedKeyword)) {
+                Log.w(TAG, "SECURITY: Exact keyword match found: '$keyword' in text")
+                return true
+            }
+            
+            // Word boundary match (as complete words)
+            val wordPattern = "\\b${Regex.escape(normalizedKeyword)}\\b"
+            try {
+                if (normalizedText.contains(Regex(wordPattern))) {
+                    Log.w(TAG, "SECURITY: Word boundary keyword match found: '$keyword' in text")
+                    return true
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in regex matching for keyword '$keyword'", e)
+            }
+            
+            // Split text by common separators and check each part
+            val textParts = normalizedText.split(" ", "\n", "\t", ".", ",", "!", "?", ";", ":")
+            for (part in textParts) {
+                val cleanPart = part.trim()
+                if (cleanPart == normalizedKeyword) {
+                    Log.w(TAG, "SECURITY: Part match keyword found: '$keyword' in text part '$cleanPart'")
+                    return true
+                }
+            }
+        }
+        
+        return false
     }
 
     /**
      * Trigger keyword protection when banned content is detected.
      */
     private fun triggerKeywordProtection(packageName: String, detectedText: String) {
-        Log.w(TAG, "SECURITY: Triggering keyword protection for $packageName")
+        Log.w(TAG, "SECURITY: Triggering keyword protection for $packageName - text: ${detectedText.take(20)}...")
         
-        // Show protection overlay
-        securityOverlayManager.showKeywordProtectionOverlay(packageName)
+        try {
+            // Show smart protection overlay with countdown timer
+            securityOverlayManager.showKeywordProtectionOverlay(packageName)
+            
+            Log.w(TAG, "Smart keyword protection overlay shown - user has 15 seconds to fix")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error triggering keyword protection", e)
+        }
+    }
+    
+    /**
+     * Register broadcast receiver for keyword checks after grace period.
+     */
+    private fun registerKeywordCheckReceiver() {
+        keywordCheckReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                if (intent?.action == "org.mozilla.fenix.CHECK_KEYWORDS_AFTER_GRACE") {
+                    val packageName = intent.getStringExtra("package_name")
+                    if (!packageName.isNullOrBlank()) {
+                        Log.d(TAG, "Received keyword check request for $packageName after grace period")
+                        performDelayedKeywordCheck(packageName)
+                    }
+                }
+            }
+        }
         
-        // Force navigation back to home
-        navigateToHome()
-        
-        // Clear recent tasks to prevent returning to the app
-        clearRecentTasks()
+        val filter = IntentFilter("org.mozilla.fenix.CHECK_KEYWORDS_AFTER_GRACE")
+        registerReceiver(keywordCheckReceiver, filter)
+        Log.d(TAG, "Keyword check receiver registered")
+    }
+    
+    /**
+     * Perform keyword check after grace period.
+     */
+    private fun performDelayedKeywordCheck(packageName: String) {
+        try {
+            // Get current active windows and scan for keywords
+            val windows = windows
+            for (window in windows) {
+                val rootNode = window.root
+                if (rootNode != null) {
+                    val windowPackage = rootNode.packageName?.toString()
+                    if (windowPackage == packageName) {
+                        Log.d(TAG, "Scanning $packageName for keywords after grace period")
+                        scanNodeForKeywords(rootNode, packageName)
+                        break
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error performing delayed keyword check", e)
+        }
     }
 
     /**
      * Check if monitoring should be active.
      */
     private fun shouldMonitor(): Boolean {
-        return isMonitoringActive && 
-               settings().isAppLockerEnabled && 
-               settings().isKeywordProtectionEnabled &&
-               securityBypassManager.shouldTriggerProtection()
+        try {
+            // Check if keyword protection is enabled
+            if (!settings().isKeywordProtectionEnabled) {
+                if (isMonitoringActive) {
+                    Log.d(TAG, "Keyword protection disabled, stopping monitoring")
+                    isMonitoringActive = false
+                }
+                return false
+            }
+            
+            // Check if within bypass window
+            if (securityBypassManager.isWithinBypassWindow()) {
+                if (isMonitoringActive) {
+                    Log.d(TAG, "Within bypass window, pausing monitoring")
+                    isMonitoringActive = false
+                }
+                return false
+            }
+            
+            if (!isMonitoringActive) {
+                Log.d(TAG, "Keyword protection monitoring activated")
+                isMonitoringActive = true
+            }
+            return true
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking monitoring state", e)
+            return false
+        }
+    }
+
+    /**
+     * Check if a node represents a search or input field.
+     */
+    private fun isSearchOrInputField(node: AccessibilityNodeInfo): Boolean {
+        val className = node.className?.toString()?.lowercase() ?: ""
+        val viewIdResourceName = node.viewIdResourceName?.lowercase() ?: ""
+        val contentDesc = node.contentDescription?.toString()?.lowercase() ?: ""
+        
+        // Check for input field class names
+        if (className.contains("edittext") || className.contains("input") || className.contains("search")) {
+            return true
+        }
+        
+        // Check for search-related IDs and descriptions
+        val searchTerms = listOf("search", "query", "input", "text", "edit")
+        return searchTerms.any { term ->
+            viewIdResourceName.contains(term) || contentDesc.contains(term)
+        }
+    }
+
+    /**
+     * Configure the accessibility service.
+     */
+    private fun configureService() {
+        val info = AccessibilityServiceInfo().apply {
+            eventTypes = AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED or
+                        AccessibilityEvent.TYPE_VIEW_FOCUSED or
+                        AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
+            flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
+                   AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+                   AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+            notificationTimeout = 100
+        }
+        setServiceInfo(info)
+        Log.d(TAG, "Accessibility service configured")
     }
 
     /**
      * Update monitoring state based on settings.
      */
     private fun updateMonitoringState() {
-        val shouldBeActive = settings().isAppLockerEnabled && 
-                           settings().isKeywordProtectionEnabled
-        
-        if (shouldBeActive != isMonitoringActive) {
-            isMonitoringActive = shouldBeActive
-            Log.d(TAG, "Keyword monitoring ${if (isMonitoringActive) "activated" else "deactivated"}")
-            
-            if (isMonitoringActive) {
-                configureService()
-            }
-        }
+        shouldMonitor() // This will update isMonitoringActive
+        Log.d(TAG, "Monitoring state updated: $isMonitoringActive")
     }
 
     /**
-     * Configure the accessibility service parameters.
+     * Create notification channel for foreground service.
      */
-    private fun configureService() {
-        val serviceInfo = AccessibilityServiceInfo().apply {
-            // Monitor text input events
-            eventTypes = AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED or
-                        AccessibilityEvent.TYPE_VIEW_FOCUSED or
-                        AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                "Keyword Protection Service",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Service that monitors text input for spiritual protection"
+                setShowBadge(false)
+            }
             
-            // Monitor all packages (or specific ones for better performance)
-            packageNames = MONITORED_PACKAGES.toTypedArray()
-            
-            // Set feedback and flags
-            feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
-            flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
-                   AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
-                   AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
-            
-            // Set notification timeout
-            notificationTimeout = 100
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
-        
-        setServiceInfo(serviceInfo)
-        Log.d(TAG, "Keyword protection service configured")
-    }
-
-    override fun onInterrupt() {
-        Log.d(TAG, "Keyword protection accessibility service interrupted")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "Keyword protection accessibility service destroyed")
-        securityOverlayManager.destroy()
     }
 
     /**
-     * Force navigation back to home screen.
+     * Start the service as a foreground service with notification.
+     */
+    private fun startForegroundService() {
+        val notification = createServiceNotification()
+        startForeground(NOTIFICATION_ID, notification)
+        Log.d(TAG, "Started as foreground service")
+    }
+
+    /**
+     * Create the notification for the foreground service.
+     */
+    private fun createServiceNotification(): Notification {
+        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("Keyword Protection Active")
+            .setContentText("Monitoring text input for spiritual safety")
+            .setSmallIcon(R.drawable.ic_lock_24)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
+    }
+
+    /**
+     * Navigate to home screen.
      */
     private fun navigateToHome() {
         try {
-            val homeIntent = Intent().apply {
-                action = Intent.ACTION_MAIN
+            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             startActivity(homeIntent)
         } catch (e: Exception) {
@@ -294,15 +459,31 @@ class KeywordProtectionAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Clear recent tasks to prevent returning to blocked app.
+     * Clear recent tasks to prevent easy return to blocked app.
      */
     private fun clearRecentTasks() {
         try {
-            // This would require additional permissions and implementation
-            // For now, we'll just log the intent
-            Log.d(TAG, "Would clear recent tasks if permission available")
+            // Perform global action to show recent apps and clear them
+            performGlobalAction(GLOBAL_ACTION_RECENTS)
         } catch (e: Exception) {
             Log.e(TAG, "Error clearing recent tasks", e)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "Keyword protection accessibility service destroyed")
+        isMonitoringActive = false
+        
+        // Unregister broadcast receiver
+        keywordCheckReceiver?.let {
+            try {
+                unregisterReceiver(it)
+                Log.d(TAG, "Keyword check receiver unregistered")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error unregistering keyword check receiver", e)
+            }
+        }
+        keywordCheckReceiver = null
     }
 }

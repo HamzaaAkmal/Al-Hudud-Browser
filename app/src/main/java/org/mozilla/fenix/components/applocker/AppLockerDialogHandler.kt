@@ -8,6 +8,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.text.InputType
+import android.util.Log
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
@@ -41,39 +42,102 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
      */
     fun handleAppLockerClick() {
         when {
-            !appLockerManager.isAccessibilityServiceEnabled() -> showPermissionDialog()
+            !areAllPermissionsGranted() -> showPermissionDialog()
             !context.settings().isAppLockerEnabled -> showSetupDialog()
             else -> showConfigurationDialog()
         }
     }
 
     /**
-     * Show permission dialog to enable accessibility service.
+     * Check if all required permissions are granted for App Locker.
      */
-    private fun showPermissionDialog() {
-        // Check for missing security permissions
-        val missingPermissions = securityManager.getMissingPermissions()
-        val permissionMessage = if (missingPermissions.isNotEmpty()) {
-            "${context.getString(R.string.app_locker_permission_message)}\n\n" +
-            "For enhanced security protection, please also grant:\n${missingPermissions.joinToString("\n• ", "• ")}"
-        } else {
-            context.getString(R.string.app_locker_permission_message)
+    private fun areAllPermissionsGranted(): Boolean {
+        // Check accessibility service
+        if (!appLockerManager.isAccessibilityServiceEnabled()) {
+            Log.d("AppLockerDialogHandler", "Accessibility service not enabled")
+            return false
         }
         
+        // Check overlay permission
+        if (!securityManager.hasOverlayPermission()) {
+            Log.d("AppLockerDialogHandler", "Overlay permission not granted")
+            return false
+        }
+        
+        // Check usage stats permission
+        if (!securityManager.hasUsageStatsPermission()) {
+            Log.d("AppLockerDialogHandler", "Usage stats permission not granted")
+            return false
+        }
+        
+        Log.d("AppLockerDialogHandler", "All required permissions granted")
+        return true
+    }
+
+    /**
+     * Show permission dialog to ensure all required permissions are granted.
+     */
+    private fun showPermissionDialog() {
+        val missingPermissions = mutableListOf<String>()
+        
+        if (!appLockerManager.isAccessibilityServiceEnabled()) {
+            missingPermissions.add("Accessibility Service (for monitoring app usage)")
+        }
+        
+        if (!securityManager.hasOverlayPermission()) {
+            missingPermissions.add("Display Over Other Apps (for security overlays)")
+        }
+        
+        if (!securityManager.hasUsageStatsPermission()) {
+            missingPermissions.add("Usage Access (for app protection)")
+        }
+        
+        val permissionMessage = """
+            App Locker requires the following permissions to function properly:
+            
+            ${missingPermissions.joinToString("\n• ", "• ")}
+            
+            Please grant all permissions to continue with App Locker setup.
+            You will be redirected back once all permissions are granted.
+        """.trimIndent()
+        
         AlertDialog.Builder(context)
-            .setTitle(context.getString(R.string.app_locker_permission_required))
+            .setTitle("Required Permissions")
             .setMessage(permissionMessage)
-            .setPositiveButton(context.getString(R.string.app_locker_permission_grant)) { _, _ ->
-                openAccessibilitySettings()
-                // Request additional security permissions if needed
-                if (missingPermissions.isNotEmpty()) {
-                    securityManager.showPermissionRequestDialog()
-                }
+            .setPositiveButton("Grant Permissions") { _, _ ->
+                requestNextMissingPermission()
             }
-            .setNegativeButton(context.getString(R.string.app_locker_permission_cancel)) { dialog, _ ->
+            .setNegativeButton("Cancel") { dialog, _ ->
                 dialog.dismiss()
+                Toast.makeText(context, "App Locker cannot be enabled without required permissions", Toast.LENGTH_LONG).show()
             }
+            .setCancelable(false)
             .show()
+    }
+
+    /**
+     * Request permissions sequentially, ensuring each is granted before proceeding.
+     */
+    private fun requestNextMissingPermission() {
+        when {
+            !appLockerManager.isAccessibilityServiceEnabled() -> {
+                Log.d("AppLockerDialogHandler", "Requesting accessibility service permission")
+                openAccessibilitySettings()
+            }
+            !securityManager.hasOverlayPermission() -> {
+                Log.d("AppLockerDialogHandler", "Requesting overlay permission")
+                securityManager.requestOverlayPermission()
+            }
+            !securityManager.hasUsageStatsPermission() -> {
+                Log.d("AppLockerDialogHandler", "Requesting usage stats permission")
+                securityManager.requestUsageStatsPermission()
+            }
+            else -> {
+                Log.d("AppLockerDialogHandler", "All permissions granted, proceeding to setup")
+                Toast.makeText(context, "All permissions granted! Setting up App Locker...", Toast.LENGTH_SHORT).show()
+                showSetupDialog()
+            }
+        }
     }
 
     /**
@@ -230,8 +294,8 @@ class AppLockerDialogHandler(private val fragment: Fragment) {
         Toast.makeText(context, "Keyword Protection $newStatus", Toast.LENGTH_SHORT).show()
         
         if (!wasEnabled) {
-            // Show instruction to enable accessibility service
-            showKeywordProtectionSetupDialog()
+            // Use SecurityManager to guide user to enable accessibility service
+            securityManager.enableKeywordProtection()
         }
     }
 
